@@ -2,126 +2,398 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gym Progress Tracker</title>
+    <!-- viewport-fit=cover so the safe-area insets below actually resolve on
+         notched phones; user-scalable is left alone on purpose (pinch-zoom is an
+         accessibility feature, not a bug). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="light">
+    <title>Gym Tracker</title>
+
+    <!-- Installable on a phone home screen. All paths are relative because
+         GitHub Pages serves this from /<repo>/, not the domain root. -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Gym Tracker">
+    <link rel="apple-touch-icon" href="icons/icon-180.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <nav class="navbar">
-            <h1 class="logo">💪 Gym Tracker</h1>
-            <div class="nav-links">
-                <button class="nav-btn active" onclick="switchTab('planner')">Plan Schedule</button>
-                <button class="nav-btn" onclick="switchTab('dashboard')">Dashboard</button>
+    <!-- Icon sprite. Stroke/fill live on presentation attributes, not CSS:
+         <use> shadow content inherits from the <use> host, not from the
+         original <symbol>'s stylesheet context. -->
+    <svg class="sprite" aria-hidden="true" focusable="false"><defs>
+        <symbol id="i-logo" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+            <rect x="3" y="13" width="4.5" height="8" rx="1.4"/>
+            <rect x="9.75" y="8.5" width="4.5" height="12.5" rx="1.4"/>
+            <rect x="16.5" y="3" width="4.5" height="18" rx="1.4"/>
+        </symbol>
+        <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M8.25 12.4l2.6 2.6 4.9-5.4"/>
+        </symbol>
+        <symbol id="i-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9"/>
+        </symbol>
+        <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4.5 7h15M9.5 7V4.8h5V7M6.8 7l.8 12.2h8.8L17.2 7"/>
+            <path d="M10.4 10.6v5.6M13.6 10.6v5.6"/>
+        </symbol>
+        <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5.5v13M5.5 12h13"/>
+        </symbol>
+        <symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 7l10 10M17 7L7 17"/>
+        </symbol>
+        <symbol id="i-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 19V5.5M6 11.5L12 5l6 6.5"/>
+        </symbol>
+        <symbol id="i-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 5v13.5M6 12.5L12 19l6-6.5"/>
+        </symbol>
+        <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 6.5h16M4 12h16M4 17.5h10"/>
+        </symbol>
+        <symbol id="i-cloud-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18.4 17.5H7a4.2 4.2 0 01-.8-8.3"/>
+            <path d="M8.6 6.6A5 5 0 0117 9.1a3.6 3.6 0 012.6 5.9"/>
+            <path d="M3.5 3.5l17 17"/>
+        </symbol>
+    </defs></svg>
+
+    <!-- ==================== AUTH GATE ====================
+         Shown until a signed-in user is confirmed. Access itself is enforced by
+         database.rules.json on the server; these screens are only here to explain
+         what is happening. -->
+    <div class="gate" id="gate">
+        <div class="gate-card">
+            <div class="gate-brand">
+                <span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#i-logo"/></svg></span>
+                <span class="brand-name">Gym Tracker</span>
             </div>
-        </nav>
 
-        <!-- Planner Tab -->
-        <div id="planner" class="tab-content active">
-            <div class="planner-container">
-                <h2>Weekly Schedule Planner</h2>
-                
-                <div class="day-selector">
-                    <button class="day-btn" onclick="selectDay(1)">Day 1</button>
-                    <button class="day-btn" onclick="selectDay(2)">Day 2</button>
-                    <button class="day-btn" onclick="selectDay(3)">Day 3</button>
-                    <button class="day-btn" onclick="selectDay(4)">Day 4</button>
-                    <button class="day-btn" onclick="selectDay(5)">Day 5</button>
-                    <button class="day-btn" onclick="selectDay(6)">Day 6</button>
-                    <button class="day-btn" onclick="selectDay(7)">Day 7</button>
+            <!-- Checking existing session -->
+            <div class="gate-view" id="gateLoading">
+                <div class="spinner" aria-hidden="true"></div>
+                <p class="gate-status" id="gateStatusText" role="status">Checking your session…</p>
+            </div>
+
+            <!-- Sign in -->
+            <form class="gate-view" id="gateSignIn" hidden novalidate>
+                <h1 class="gate-title">Sign in</h1>
+                <p class="gate-sub">Use the account you were given access with.</p>
+                <div class="field">
+                    <label for="signInEmail">Email</label>
+                    <input type="email" id="signInEmail" autocomplete="email" inputmode="email"
+                           autocapitalize="none" spellcheck="false" required>
                 </div>
-
-                <div class="plan-section">
-                    <h3>Plan for <span id="selectedDayName">Day 1</span></h3>
-                    
-                    <div class="exercise-input-group">
-                        <label for="exerciseName">Exercise Name:</label>
-                        <input type="text" id="exerciseName" placeholder="e.g., Dumbbell Press" onkeypress="if(event.key==='Enter') addExerciseToDay()">
-                        <button class="btn-primary" onclick="addExerciseToDay()">Add Exercise</button>
-                    </div>
-
-                    <div class="exercises-list" id="exercisesList">
-                        <!-- Exercises will be displayed here -->
-                    </div>
+                <div class="field">
+                    <label for="signInPassword">Password</label>
+                    <input type="password" id="signInPassword" autocomplete="current-password" required>
                 </div>
+                <p class="gate-error" id="signInError" role="alert" hidden></p>
+                <button type="submit" class="btn btn-primary btn-block" id="signInBtn">Sign in</button>
+                <div class="gate-links">
+                    <button type="button" class="link-btn" onclick="showGateView('gateSignUp')">Create account</button>
+                    <button type="button" class="link-btn" onclick="showGateView('gateReset')">Forgot password?</button>
+                </div>
+            </form>
+
+            <!-- Create account -->
+            <form class="gate-view" id="gateSignUp" hidden novalidate>
+                <h1 class="gate-title">Create account</h1>
+                <p class="gate-sub">After signing up, the owner has to add you before your log opens.</p>
+                <div class="field">
+                    <label for="signUpEmail">Email</label>
+                    <input type="email" id="signUpEmail" autocomplete="email" inputmode="email"
+                           autocapitalize="none" spellcheck="false" required>
+                </div>
+                <div class="field">
+                    <label for="signUpPassword">Password <span class="opt">at least 6 characters</span></label>
+                    <input type="password" id="signUpPassword" autocomplete="new-password" required>
+                </div>
+                <div class="field">
+                    <label for="signUpConfirm">Confirm password</label>
+                    <input type="password" id="signUpConfirm" autocomplete="new-password" required>
+                </div>
+                <p class="gate-error" id="signUpError" role="alert" hidden></p>
+                <button type="submit" class="btn btn-primary btn-block" id="signUpBtn">Create account</button>
+                <div class="gate-links">
+                    <button type="button" class="link-btn" onclick="showGateView('gateSignIn')">Back to sign in</button>
+                </div>
+            </form>
+
+            <!-- Reset password -->
+            <form class="gate-view" id="gateReset" hidden novalidate>
+                <h1 class="gate-title">Reset password</h1>
+                <p class="gate-sub">We'll email you a reset link.</p>
+                <div class="field">
+                    <label for="resetEmail">Email</label>
+                    <input type="email" id="resetEmail" autocomplete="email" inputmode="email"
+                           autocapitalize="none" spellcheck="false" required>
+                </div>
+                <p class="gate-error" id="resetError" role="alert" hidden></p>
+                <p class="gate-ok" id="resetOk" role="status" hidden></p>
+                <button type="submit" class="btn btn-primary btn-block" id="resetBtn">Send reset link</button>
+                <div class="gate-links">
+                    <button type="button" class="link-btn" onclick="showGateView('gateSignIn')">Back to sign in</button>
+                </div>
+            </form>
+
+            <!-- Signed in, but not on the allowlist -->
+            <div class="gate-view" id="gateDenied" hidden>
+                <h1 class="gate-title">Waiting for access</h1>
+                <p class="gate-sub">
+                    Your account exists but hasn't been added yet. Send this ID to whoever
+                    runs the tracker and they'll let you in.
+                </p>
+                <div class="uid-box">
+                    <code id="deniedUid">—</code>
+                    <button type="button" class="btn btn-ghost btn-sm" id="copyUidBtn">Copy</button>
+                </div>
+                <p class="gate-meta" id="deniedEmail"></p>
+                <button type="button" class="btn btn-ghost btn-block" id="recheckBtn">Check again</button>
+                <div class="gate-links">
+                    <button type="button" class="link-btn" id="deniedSignOut">Sign out</button>
+                </div>
+            </div>
+
+            <!-- Firebase itself is unreachable -->
+            <div class="gate-view" id="gateError" hidden>
+                <h1 class="gate-title">Can't reach the server</h1>
+                <p class="gate-sub" id="gateErrorDetail">
+                    The Firebase SDK didn't load. Check your connection, then reload.
+                </p>
+                <button type="button" class="btn btn-primary btn-block" onclick="location.reload()">Reload</button>
             </div>
         </div>
+    </div>
 
-        <!-- Dashboard Tab -->
-        <div id="dashboard" class="tab-content">
-            <div class="dashboard-container">
-                <h2>Track Your Progress</h2>
-                
-                <div class="dashboard-layout">
-                    <!-- Left Panel: Exercises and Logging -->
-                    <div class="left-panel">
-                        <h3>Today's Exercises</h3>
-                            <div class="date-selector">
-                                <label for="sessionDate">Session Date:</label>
-                                <input type="date" id="sessionDate">
-                            </div>
+    <div class="app" id="app" hidden>
+        <header class="topbar">
+            <div class="brand">
+                <span class="brand-mark"><svg class="icon" aria-hidden="true"><use href="#i-logo"/></svg></span>
+                <span class="brand-copy">
+                    <span class="brand-name">Gym Tracker</span>
+                    <span class="brand-sub" id="brandSub">Training log &amp; progression</span>
+                </span>
+            </div>
+            <nav class="segmented" aria-label="Sections">
+                <button class="nav-btn active" onclick="switchTab('planner')">Plan</button>
+                <button class="nav-btn" onclick="switchTab('dashboard')">Dashboard</button>
+            </nav>
+            <div class="topbar-end">
+                <span class="offline-badge" id="offlineBadge" hidden>
+                    <svg class="icon" aria-hidden="true"><use href="#i-cloud-off"/></svg>Offline
+                </span>
+                <button type="button" class="btn btn-ghost btn-sm" id="signOutBtn">Sign out</button>
+            </div>
+        </header>
 
-                            <div class="date-selector">
-                                <label for="sessionDay">Session Day Number (1-7):</label>
-                                <input type="number" id="sessionDay" min="1" max="7" value="1">
-                            </div>
-                            <div class="date-selector">
-                                <label for="sessionNumber">Session Number:</label>
-                                <input type="number" id="sessionNumber" min="1" value="1">
-                            </div>
+        <!-- ==================== PLANNER ==================== -->
+        <div id="planner" class="tab-content active">
+            <div class="page-head">
+                <p class="eyebrow">Planner</p>
+                <h2>Weekly schedule</h2>
+                <p class="page-sub">Build the exercise list for each of your seven training days.</p>
+            </div>
 
-                        <div class="exercises-today" id="exercisesToday">
-                            <!-- Exercises will be listed here -->
-                        </div>
-
-                        <div id="logForm" class="log-form" style="display: none;">
-                            <h4>Log Exercise Details</h4>
-
-                            <div id="setsLogContainer">
-                                <!-- dynamic set rows go here -->
-                            </div>
-
-                            <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px;">
-                                <button id="addSetLogBtn" class="btn-secondary">Add Set</button>
-                                <div id="totalRepsDisplay">Total reps: 0</div>
-                            </div>
-
-                            <label for="sessionName">Session name (optional):</label>
-                            <input type="text" id="sessionName" placeholder="e.g. Heavy Bench, Volume" onkeypress="if(event.key==='Enter') logExercise()" />
-
-                            <label for="overallWeight">Overall weight (kg):</label>
-                            <input type="number" id="overallWeight" placeholder="Optional weight for this session" min="0.1" step="0.1" onkeypress="if(event.key==='Enter') logExercise()">
-
-                            <button class="btn-primary" id="saveLogBtn">Log This Session</button>
-                            <div id="logMessage" style="margin-top:10px;color:#333;font-weight:600"></div>
-                        </div>
-                    </div>
-
-                    <!-- Right Panel: Progress Charts -->
-                    <div class="right-panel">
-                        <div class="chart-section">
-                            <h3>Progress Graphs</h3>
-                            
-                            <div class="exercise-selector">
-                                <label for="exerciseSelect">Select Exercise:</label>
-                                <select id="exerciseSelect" onchange="updateCharts()">
-                                    <option value="">Choose an exercise</option>
-                                </select>
-                            </div>
-
-                            <div class="charts-grid">
-                                <div class="chart-container">
-                                    <h4>Reps Progress</h4>
-                                    <canvas id="repsChart"></canvas>
-                                </div>
-                                <div class="chart-container">
-                                    <h4>Weight Progress</h4>
-                                    <canvas id="weightChart"></canvas>
-                                </div>
-                            </div>
-                        </div>
+            <section class="card">
+                <div class="card-head">
+                    <h3>Training day</h3>
+                    <p class="card-hint">Pick a day to edit its plan</p>
+                </div>
+                <div class="card-body">
+                    <div class="day-selector">
+                        <button class="day-btn" onclick="selectDay(1)">Day 1</button>
+                        <button class="day-btn" onclick="selectDay(2)">Day 2</button>
+                        <button class="day-btn" onclick="selectDay(3)">Day 3</button>
+                        <button class="day-btn" onclick="selectDay(4)">Day 4</button>
+                        <button class="day-btn" onclick="selectDay(5)">Day 5</button>
+                        <button class="day-btn" onclick="selectDay(6)">Day 6</button>
+                        <button class="day-btn" onclick="selectDay(7)">Day 7</button>
                     </div>
                 </div>
+            </section>
+
+            <section class="card">
+                <div class="card-head">
+                    <h3>Plan for <span id="selectedDayName">Day 1</span></h3>
+                </div>
+                <div class="card-body">
+                    <div class="field">
+                        <label for="exerciseName">Exercise name</label>
+                        <div class="input-row">
+                            <input type="text" id="exerciseName" placeholder="e.g. Dumbbell press" autocomplete="off"
+                                   onkeypress="if(event.key==='Enter') addExerciseToDay()">
+                            <button class="btn btn-primary" onclick="addExerciseToDay()">
+                                <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Add exercise
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="exercises-list" id="exercisesList"></div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ==================== DASHBOARD ==================== -->
+        <div id="dashboard" class="tab-content">
+            <div class="page-head">
+                <p class="eyebrow">Dashboard</p>
+                <h2>Progress</h2>
+                <p class="page-sub">Log today's work and track how each lift is trending.</p>
+            </div>
+
+            <!-- KPI row: derived from every log, all time -->
+            <section class="stat-row" aria-label="Summary across all logged sessions">
+                <article class="stat">
+                    <p class="stat-label">Sessions logged</p>
+                    <p class="stat-value" id="statSessions">—</p>
+                    <p class="stat-foot" id="statSessionsFoot">All time</p>
+                </article>
+                <article class="stat">
+                    <p class="stat-label">Total reps</p>
+                    <p class="stat-value" id="statReps">—</p>
+                    <p class="stat-foot" id="statRepsFoot">All time</p>
+                </article>
+                <article class="stat">
+                    <p class="stat-label">Best set</p>
+                    <p class="stat-value" id="statBest">—</p>
+                    <p class="stat-foot" id="statBestFoot">All time</p>
+                </article>
+                <article class="stat">
+                    <p class="stat-label">Current streak</p>
+                    <p class="stat-value" id="statStreak">—</p>
+                    <p class="stat-foot" id="statStreakFoot">Consecutive weeks trained</p>
+                </article>
+            </section>
+
+            <div class="dashboard-layout">
+                <!-- Left: session logging -->
+                <section class="card">
+                    <div class="card-head">
+                        <h3>Log a session</h3>
+                        <p class="card-hint">Choose a day, then tap an exercise</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="field-grid">
+                            <div class="field">
+                                <label for="sessionDate">Date</label>
+                                <input type="date" id="sessionDate">
+                            </div>
+                            <div class="field">
+                                <label for="sessionDay">Training day</label>
+                                <input type="number" id="sessionDay" min="1" max="7" value="1">
+                            </div>
+                            <div class="field">
+                                <label for="sessionNumber">Session no.</label>
+                                <input type="number" id="sessionNumber" min="1" value="1">
+                            </div>
+                        </div>
+
+                        <div class="subhead">Exercises for this day</div>
+                        <div class="exercises-today" id="exercisesToday"></div>
+
+                        <div id="logForm" class="log-form" hidden>
+                            <div class="log-form-head">
+                                <h4 id="logFormTitle">Log details</h4>
+                            </div>
+
+                            <div class="subhead">Sets</div>
+                            <div id="setsLogContainer"></div>
+
+                            <div class="sets-toolbar">
+                                <button id="addSetLogBtn" class="btn btn-ghost">
+                                    <svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Add set
+                                </button>
+                                <div id="totalRepsDisplay" class="total-pill">Total reps: 0</div>
+                            </div>
+
+                            <div class="field">
+                                <label for="sessionName">Session name <span class="opt">optional</span></label>
+                                <input type="text" id="sessionName" placeholder="e.g. Heavy bench" autocomplete="off"
+                                       onkeypress="if(event.key==='Enter') logExercise()">
+                            </div>
+
+                            <div class="field">
+                                <label for="overallWeight">Weight <span class="opt">kg, optional</span></label>
+                                <input type="number" id="overallWeight" placeholder="e.g. 42.5" min="0.1" step="0.1"
+                                       onkeypress="if(event.key==='Enter') logExercise()">
+                            </div>
+
+                            <button class="btn btn-primary btn-block" id="saveLogBtn">Save session</button>
+                            <div id="logMessage" class="log-message" role="status"></div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Right: charts + table twin -->
+                <section class="card">
+                    <div class="card-head">
+                        <h3>Progression</h3>
+                        <div class="segmented segmented-sm" role="tablist" aria-label="Chart or table view">
+                            <button class="view-btn active" id="viewChartBtn" onclick="switchChartView('chart')">Chart</button>
+                            <button class="view-btn" id="viewTableBtn" onclick="switchChartView('table')">Table</button>
+                        </div>
+                    </div>
+
+                    <!-- One filter row above everything it scopes -->
+                    <div class="filter-row">
+                        <div class="field">
+                            <label for="exerciseSelect">Exercise</label>
+                            <select id="exerciseSelect" onchange="updateCharts()">
+                                <option value="">Choose an exercise</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="card-body">
+                        <div id="viewChart">
+                            <div class="charts-grid">
+                                <figure class="chart">
+                                    <figcaption>
+                                        <span class="chart-title">Total reps per session</span>
+                                        <span class="chart-key" style="--key:var(--series-1)"></span>
+                                    </figcaption>
+                                    <div class="chart-canvas"><canvas id="repsChart"></canvas></div>
+                                </figure>
+                                <figure class="chart">
+                                    <figcaption>
+                                        <span class="chart-title">Weight per session (kg)</span>
+                                        <span class="chart-key" style="--key:var(--series-2)"></span>
+                                    </figcaption>
+                                    <div class="chart-canvas"><canvas id="weightChart"></canvas></div>
+                                </figure>
+                            </div>
+                            <p class="chart-empty" id="chartEmpty">
+                                <svg class="icon" aria-hidden="true"><use href="#i-list"/></svg>
+                                <span id="chartEmptyText">Select an exercise to see its progression.</span>
+                            </p>
+                        </div>
+
+                        <div id="viewTable" hidden>
+                            <div class="table-wrap">
+                                <table class="data-table">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Date</th>
+                                            <th scope="col">Exercise</th>
+                                            <th scope="col">Session</th>
+                                            <th scope="col">Sets</th>
+                                            <th scope="col" class="num">Total reps</th>
+                                            <th scope="col" class="num">Weight</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="historyBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
         </div>
     </div>
@@ -129,6 +401,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Firebase SDKs - Compat version for global access -->
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="script.js"></script>
