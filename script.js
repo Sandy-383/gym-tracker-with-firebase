@@ -131,6 +131,15 @@ function showApp(visible) {
     const gate = document.getElementById('gate');
     if (app) app.hidden = !visible;
     if (gate) gate.hidden = visible;
+
+    // The gate is dark and the app is light. The class goes on <html> so the
+    // dark background also covers mobile overscroll past the body.
+    document.documentElement.classList.toggle('auth-mode', !visible);
+
+    // Match the phone's status bar to whichever surface is showing; a white bar
+    // above the dark login reads as a rendering bug when installed.
+    const themeColor = document.querySelector('meta[name="theme-color"]');
+    if (themeColor) themeColor.setAttribute('content', visible ? '#ffffff' : '#07080a');
 }
 
 function renderAll() {

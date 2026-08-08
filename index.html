@@ -1,5 +1,7 @@
 <!DOCTYPE html>
-<html lang="en">
+<!-- auth-mode is set here, not by script, so the dark login paints on the very
+     first frame. showApp() removes it once the app is ready. -->
+<html lang="en" class="auth-mode">
 <head>
     <meta charset="UTF-8">
     <!-- viewport-fit=cover so the safe-area insets below actually resolve on
@@ -12,7 +14,8 @@
     <!-- Installable on a phone home screen. All paths are relative because
          GitHub Pages serves this from /<repo>/, not the domain root. -->
     <link rel="manifest" href="manifest.webmanifest">
-    <meta name="theme-color" content="#ffffff">
+    <!-- Starts dark to match the login screen; showApp() swaps it to #ffffff. -->
+    <meta name="theme-color" content="#07080a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Gym Tracker">

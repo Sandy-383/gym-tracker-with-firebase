@@ -673,6 +673,243 @@ select {
     body { padding-top: max(10px, env(safe-area-inset-top)); }
 }
 
+/* ============================================================
+   AUTH MODE — dark cinematic backdrop + frosted glass card
+   Applied as .auth-mode on <html> while the gate is showing, so the
+   html background covers mobile overscroll too. The app itself stays light.
+
+   Contrast is engineered, not eyeballed. Worst case is a BRIGHT photo
+   directly behind the card:
+     photo #fff -> page scrim 0.62 -> card tint 0.55  ==  #333333 surface
+   Against that: white 12.6:1, muted (0.70 alpha) 7.1:1, white-on-accent
+   6.3:1. The app's normal link and error colours are unusable here —
+   #4338ca measures 1.6:1 and #b42318 measures 1.9:1 — so both are
+   re-tokenised below rather than inherited.
+   ============================================================ */
+
+html.auth-mode { background: #07080a; }
+
+html.auth-mode body {
+    background: transparent;
+    color: #fff;
+
+    /* Ink re-tokenised for a dark translucent surface */
+    --ink: #ffffff;
+    --ink-2: rgba(255, 255, 255, 0.82);
+    --ink-muted: rgba(255, 255, 255, 0.70);
+    --line: rgba(255, 255, 255, 0.16);
+    --bad: #fecaca;
+    --good: #bbf7d0;
+
+    --login-photo: none;
+    /* The scrim exists to tame an unknown photo. With the generated backdrop
+       below there is nothing to tame — it is already dark by construction — so
+       a heavy scrim would only flatten it to black. Hence it is a variable,
+       raised to 0.62 (the value the contrast maths assumes) only when a real
+       photo is switched on. */
+    --login-scrim: 0.22;
+}
+
+/* ---- To use your own photo: drop it at images/login-bg.jpg and uncomment ----
+html.auth-mode body {
+    --login-photo: url('images/login-bg.jpg');
+    --login-scrim: 0.62;
+}
+----------------------------------------------------------------------------- */
+
+/* Layer 1 — the picture, or a lit-from-above spotlight when there is no file.
+   The bright pool is deliberately placed where the card sits: backdrop-filter
+   needs luminance variation behind it or the "glass" reads as flat plastic. */
+html.auth-mode body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background-color: #05060a;
+    background-image:
+        var(--login-photo),
+        radial-gradient(ellipse 75% 55% at 50% 30%, rgba(150, 163, 196, 0.30) 0%, rgba(150, 163, 196, 0.07) 45%, transparent 70%),
+        radial-gradient(ellipse 60% 45% at 50% 72%, rgba(99, 91, 255, 0.26) 0%, transparent 68%),
+        radial-gradient(ellipse 90% 60% at 12% 8%, rgba(56, 68, 102, 0.22) 0%, transparent 60%),
+        linear-gradient(180deg, #0b0e14 0%, #07080c 50%, #040405 100%);
+    background-size: cover, auto, auto, auto, auto;
+    background-position: center center;
+    background-repeat: no-repeat;
+}
+
+/* Layer 2 — scrim + edge vignette. The vignette only ever darkens, so it can
+   never lift the surface above what the contrast maths allows. */
+html.auth-mode body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background:
+        radial-gradient(ellipse 80% 68% at 50% 45%, transparent 0%, rgba(0, 0, 0, 0.60) 100%),
+        rgba(0, 0, 0, var(--login-scrim));
+}
+
+html.auth-mode .gate { min-height: 88vh; }
+
+html.auth-mode .gate-card {
+    background: rgba(10, 12, 16, 0.55);
+    -webkit-backdrop-filter: blur(22px) saturate(150%);
+    backdrop-filter: blur(22px) saturate(150%);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 20px;
+    box-shadow:
+        0 24px 60px rgba(0, 0, 0, 0.55),
+        inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+html.auth-mode .gate-brand { border-bottom-color: rgba(255, 255, 255, 0.14); }
+html.auth-mode .gate-brand .brand-name { color: #fff; }
+html.auth-mode .gate-title { color: #fff; }
+html.auth-mode .gate-sub,
+html.auth-mode .gate-status,
+html.auth-mode .gate-meta { color: rgba(255, 255, 255, 0.70); }
+html.auth-mode .field label { color: rgba(255, 255, 255, 0.86); }
+html.auth-mode .field .opt { color: rgba(255, 255, 255, 0.62); }
+
+/* Inputs read as etched into the glass rather than sitting on it */
+html.auth-mode .gate input[type="text"],
+html.auth-mode .gate input[type="email"],
+html.auth-mode .gate input[type="password"] {
+    background: rgba(255, 255, 255, 0.10);
+    border-color: rgba(255, 255, 255, 0.26);
+    border-radius: 10px;
+    color: #fff;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+html.auth-mode .gate input::placeholder { color: rgba(255, 255, 255, 0.48); }
+html.auth-mode .gate input:focus {
+    background: rgba(255, 255, 255, 0.13);
+    border-color: rgba(255, 255, 255, 0.55);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.12);
+}
+
+/* Autofill would otherwise repaint the field opaque pale-blue with dark text,
+   which looks broken on glass. The long transition defers the UA background
+   effectively forever; text-fill-color is the only way to keep the glyphs white. */
+html.auth-mode .gate input:-webkit-autofill,
+html.auth-mode .gate input:-webkit-autofill:hover,
+html.auth-mode .gate input:-webkit-autofill:focus {
+    -webkit-text-fill-color: #fff;
+    caret-color: #fff;
+    -webkit-box-shadow: 0 0 0 100px rgba(28, 30, 38, 0.96) inset;
+    transition: background-color 9999s ease-out 0s;
+}
+
+html.auth-mode .gate-links { border-top-color: rgba(255, 255, 255, 0.14); }
+/* The app's accent-ink link is 1.6:1 here — a light step is mandatory. */
+html.auth-mode .link-btn { color: #c7d2fe; }
+html.auth-mode .link-btn:hover { color: #fff; }
+
+html.auth-mode .gate-error {
+    color: #fecaca;
+    background: rgba(180, 35, 24, 0.22);
+    border-color: rgba(254, 202, 202, 0.30);
+}
+html.auth-mode .gate-ok {
+    color: #bbf7d0;
+    background: rgba(4, 108, 64, 0.24);
+    border-color: rgba(187, 247, 208, 0.30);
+}
+
+html.auth-mode .btn-ghost {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.20);
+    color: #fff;
+}
+html.auth-mode .btn-ghost:hover { background: rgba(255, 255, 255, 0.16); }
+
+html.auth-mode .uid-box {
+    background: rgba(0, 0, 0, 0.30);
+    border-color: rgba(255, 255, 255, 0.16);
+}
+html.auth-mode .uid-box code { color: #fff; }
+
+html.auth-mode .spinner {
+    border-color: rgba(255, 255, 255, 0.18);
+    border-top-color: #c7d2fe;
+}
+
+/* ---------------- Entrance animation ----------------
+   Every base style below is the FINAL state; the opening state lives only in
+   the keyframes. That matters because the global prefers-reduced-motion rule
+   kills `animation` outright — if a base rule said opacity:0 the whole login
+   would render invisible for those users instead of just un-animated.
+
+   The transform rides on .gate, never on .gate-card: WebKit can drop or
+   mis-rasterise backdrop-filter on an element that is itself transformed, and
+   .gate is the card's centring parent so the visual result is identical. */
+
+@keyframes gate-rise {
+    from { opacity: 0; transform: translateY(18px) scale(0.985); }
+    to   { opacity: 1; transform: none; }
+}
+
+@keyframes gate-item {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* A slow cinematic push-in that settles and stops. Deliberately one-shot
+   rather than an infinite Ken Burns loop: perpetual background motion on a
+   login screen is a battery cost and a distraction, not polish. */
+@keyframes gate-backdrop {
+    from { opacity: 0; transform: scale(1.08); }
+    to   { opacity: 1; transform: none; }
+}
+
+@keyframes gate-mark {
+    from { opacity: 0; transform: scale(0.8); }
+    to   { opacity: 1; transform: none; }
+}
+
+html.auth-mode body::before {
+    animation: gate-backdrop 1400ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+html.auth-mode .gate {
+    animation: gate-rise 640ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+html.auth-mode .gate-brand .brand-mark {
+    animation: gate-mark 520ms cubic-bezier(0.34, 1.56, 0.64, 1) 140ms both;
+}
+
+/* Stagger the contents of whichever screen is showing. Because the selector is
+   :not([hidden]), this replays on every gate change — sign in -> create
+   account -> reset each get the same settle instead of snapping. */
+html.auth-mode .gate-view:not([hidden]) > * {
+    animation: gate-item 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+html.auth-mode .gate-view:not([hidden]) > *:nth-child(1) { animation-delay: 180ms; }
+html.auth-mode .gate-view:not([hidden]) > *:nth-child(2) { animation-delay: 240ms; }
+html.auth-mode .gate-view:not([hidden]) > *:nth-child(3) { animation-delay: 300ms; }
+html.auth-mode .gate-view:not([hidden]) > *:nth-child(4) { animation-delay: 360ms; }
+html.auth-mode .gate-view:not([hidden]) > *:nth-child(5) { animation-delay: 410ms; }
+html.auth-mode .gate-view:not([hidden]) > *:nth-child(6) { animation-delay: 455ms; }
+html.auth-mode .gate-view:not([hidden]) > *:nth-child(7) { animation-delay: 495ms; }
+html.auth-mode .gate-view:not([hidden]) > *:nth-child(n+8) { animation-delay: 530ms; }
+
+/* No backdrop-filter (older Firefox, some embedded webviews): the blur is what
+   makes translucency readable, so without it go nearly opaque instead. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    html.auth-mode .gate-card { background: rgba(12, 14, 19, 0.93); }
+}
+
+/* Respect a stated preference for less transparency. */
+@media (prefers-reduced-transparency: reduce) {
+    html.auth-mode .gate-card {
+        background: #0f1116;
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+    html.auth-mode body::after { background: rgba(0, 0, 0, 0.80); }
+}
+
 @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
 }
