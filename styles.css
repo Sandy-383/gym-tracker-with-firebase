@@ -404,6 +404,20 @@ select {
 }
 .icon-btn:hover { background: var(--bad-wash); border-color: var(--bad-wash); color: var(--bad); }
 
+.icon-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.icon-btn:disabled:hover { background: transparent; border-color: transparent; color: var(--ink-muted); }
+
+/* A 30px target is fine for a mouse and too small for a thumb. */
+@media (pointer: coarse) {
+    .icon-btn { width: 42px; height: 42px; }
+    .icon-btn .icon { width: 18px; height: 18px; }
+}
+
+/* Make the per-set delete legible as a delete without a hover state to rely on
+   (there is no hover on a phone). */
+.set-row .set-remove { color: #98a1ae; }
+.set-row .set-remove:not(:disabled):hover { color: var(--bad); }
+
 /* ---------------- Day selector ---------------- */
 .day-selector {
     display: grid;

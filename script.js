@@ -377,6 +377,11 @@ function setTodayDate() {
 }
 
 function wireDashboardInputs() {
+    // 'change' is the right event for a date input: it fires once the picker
+    // commits a complete date, not on every partial keystroke.
+    const dateInput = document.getElementById('sessionDate');
+    if (dateInput) dateInput.addEventListener('change', handleSessionDateChange);
+
     const dayInput = document.getElementById('sessionDay');
     if (dayInput) {
         dayInput.value = dayInput.value || 1;
@@ -726,7 +731,13 @@ function updateExercisesToday() {
 
     container.innerHTML = exercises.map(exercise => {
         const exerciseName = exercise.name;
-        const sessionLogs = logs.filter(log => log.date === sessionDate && log.exercise === exerciseName);
+        // Scoped by session number too — otherwise logging session 1 marked
+        // session 2 as already done.
+        const sessionLogs = logs.filter(log =>
+            log.date === sessionDate &&
+            log.exercise === exerciseName &&
+            (parseInt(log.sessionNumber) || 1) === sessionNumber
+        );
         const completed = sessionLogs.length > 0;
         const totalReps = completed ? repsOf(sessionLogs[0]) : 0;
         // The name rides in a data attribute so quotes in it can't break the handler.
@@ -757,21 +768,49 @@ function selectExerciseForLogging(exerciseName, date, dayNumber, sessionNumber) 
     const sessionNumberInput = document.getElementById('sessionNumber');
     if (sessionNumberInput) sessionNumberInput.value = sessionNumber || sessionNumberInput.value;
 
-    // Load previous entry if exists for this date/exercise/session
-    const logs = getLogsData();
-    const previousLog = logs.find(log => log.date === date && log.exercise === exerciseName && (sessionNumber == null || log.sessionNumber == sessionNumber));
+    loadLogIntoForm(date, exerciseName, sessionNumber);
+}
 
-    if (previousLog) {
-        renderSetsForLog(previousLog.sets || []);
-        document.getElementById('overallWeight').value = previousLog.weight || '';
-        document.getElementById('sessionName').value = previousLog.sessionName || '';
-        document.getElementById('logMessage').textContent = 'Loaded previous log for this date/session.';
+// The single answer to "what should the form show for this date/exercise/session".
+// Used on first open AND whenever the date or session number changes underneath
+// an already-open form. Previously this logic was duplicated, which is exactly
+// why the date path never got it: changing the date left the previous day's
+// sets on screen.
+function loadLogIntoForm(date, exerciseName, sessionNumber) {
+    const wanted = parseInt(sessionNumber) || 1;
+    const existing = getLogsData().find(log =>
+        log.date === date &&
+        log.exercise === exerciseName &&
+        (parseInt(log.sessionNumber) || 1) === wanted
+    );
+
+    if (existing) {
+        renderSetsForLog(existing.sets || []);
+        document.getElementById('overallWeight').value = (typeof existing.weight === 'number') ? existing.weight : '';
+        document.getElementById('sessionName').value = existing.sessionName || '';
+        setText('logMessage', `Showing your saved session for ${formatDate(date)}.`);
     } else {
-        renderSetsForLog([]); // start fresh with one empty set
+        renderSetsForLog([]); // one empty row
         document.getElementById('overallWeight').value = '';
         document.getElementById('sessionName').value = '';
-        document.getElementById('logMessage').textContent = '';
+        setText('logMessage', `Nothing logged for ${formatDate(date)} yet.`);
     }
+
+    return !!existing;
+}
+
+// Changing the date must re-point the open form at the new day, not just
+// relabel it. Without re-pointing, a save went to the previously selected date
+// and silently overwrote it.
+function handleSessionDateChange() {
+    const date = document.getElementById('sessionDate').value;
+    if (!date) return;
+
+    updateExercisesToday();   // refresh the logged/not-logged markers for the new day
+
+    if (!currentExerciseForLogging || !currentExerciseForLogging.name) return;
+    currentExerciseForLogging.date = date;
+    loadLogIntoForm(date, currentExerciseForLogging.name, currentExerciseForLogging.sessionNumber);
 }
 
 function logExercise() {
@@ -797,12 +836,17 @@ function logExercise() {
 
     const weight = parseFloat(document.getElementById('overallWeight').value);
     const sessionNameValue = document.getElementById('sessionName').value.trim();
-    const curSessionNumber = parseInt(currentExerciseForLogging.sessionNumber)
-        || parseInt(document.getElementById('sessionNumber').value) || 1;
+
+    // Read the date and session number from the visible inputs, not from the
+    // values captured when the row was tapped. Anything else risks saving to
+    // whatever was selected earlier — which is how editing after changing the
+    // date silently overwrote the wrong day.
+    const curSessionNumber = parseInt(document.getElementById('sessionNumber').value) || 1;
+    const curDate = document.getElementById('sessionDate').value || currentExerciseForLogging.date;
 
     const newLog = sanitizeLog({
         exercise: currentExerciseForLogging.name,
-        date: currentExerciseForLogging.date,
+        date: curDate,
         day: sessionDay,
         sessionNumber: curSessionNumber,
         sessionName: sessionNameValue || null,
@@ -828,6 +872,10 @@ function logExercise() {
     }
     writeCache();
     pushUpdate({ ['logs/' + logId]: newLog });
+
+    // Keep the tracked selection pointing at what was just written.
+    currentExerciseForLogging.date = curDate;
+    currentExerciseForLogging.sessionNumber = curSessionNumber;
 
     // Compare with next session for the same exercise (chronological)
     const comparison = compareWithNextSession(Object.assign({ id: logId }, newLog), getLogsData());
@@ -882,18 +930,26 @@ function addSetLogRow(reps) {
         }
     });
 
+    // Trash rather than a bare ×: × reads as "close/dismiss", trash reads as
+    // "delete this row", which is what it does.
     const removeBtn = document.createElement('button');
     removeBtn.type = 'button';
-    removeBtn.className = 'icon-btn';
-    removeBtn.setAttribute('aria-label', `Remove set ${idx}`);
-    removeBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>';
-    removeBtn.addEventListener('click', (e) => { e.preventDefault(); row.remove(); updateSetLabels(); updateTotalFromUI(); });
+    removeBtn.className = 'icon-btn set-remove';
+    removeBtn.setAttribute('aria-label', `Delete set ${idx}`);
+    removeBtn.innerHTML = '<svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>';
+    removeBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        row.remove();
+        updateSetRowControls();
+        updateTotalFromUI();
+    });
 
     row.appendChild(label);
     row.appendChild(repsInput);
     row.appendChild(removeBtn);
 
     container.appendChild(row);
+    updateSetRowControls();
     updateTotalFromUI();
 }
 
@@ -905,14 +961,27 @@ function renderSetsForLog(setsArray) {
         return;
     }
     setsArray.forEach(s => addSetLogRow(s.reps));
+    updateSetRowControls();
 }
 
-function updateSetLabels() {
-    document.querySelectorAll('#setsLogContainer .set-row').forEach((row, i) => {
+// Renumbers rows after a deletion and keeps the delete buttons honest: a saved
+// session must have at least one set, so the last remaining row can't be
+// deleted. Disabling it says so, rather than letting the tap fail silently or
+// leaving an empty form with nothing to fill in.
+function updateSetRowControls() {
+    const rows = document.querySelectorAll('#setsLogContainer .set-row');
+    const onlyOne = rows.length <= 1;
+
+    rows.forEach((row, i) => {
         const label = row.querySelector('.set-label');
         if (label) label.textContent = `Set ${i + 1}`;
-        const removeBtn = row.querySelector('.icon-btn');
-        if (removeBtn) removeBtn.setAttribute('aria-label', `Remove set ${i + 1}`);
+
+        const removeBtn = row.querySelector('.set-remove');
+        if (removeBtn) {
+            removeBtn.setAttribute('aria-label', `Delete set ${i + 1}`);
+            removeBtn.disabled = onlyOne;
+            removeBtn.title = onlyOne ? 'A session needs at least one set' : `Delete set ${i + 1}`;
+        }
     });
 }
 
@@ -931,25 +1000,10 @@ function handleSessionNumberChange() {
         return;
     }
 
-    const logs = getLogsData();
-    const existing = logs.find(log =>
-        log.date === currentExerciseForLogging.date &&
-        log.exercise === currentExerciseForLogging.name &&
-        ((parseInt(log.sessionNumber) || 1) === sessionNumber)
-    );
-
-    if (existing) {
-        renderSetsForLog(existing.sets || []);
-        document.getElementById('overallWeight').value = existing.weight || '';
-        document.getElementById('sessionName').value = existing.sessionName || '';
-        document.getElementById('logMessage').textContent = `Loaded session ${sessionNumber}.`;
-    } else {
-        // clear form for new session
-        renderSetsForLog([]);
-        document.getElementById('overallWeight').value = '';
-        document.getElementById('sessionName').value = '';
-        document.getElementById('logMessage').textContent = '';
-    }
+    // Re-point the form at the new session. This was missing too: it loaded
+    // session 2's sets but a save still went to session 1.
+    currentExerciseForLogging.sessionNumber = sessionNumber;
+    loadLogIntoForm(currentExerciseForLogging.date, currentExerciseForLogging.name, sessionNumber);
 }
 
 function computeTotalRepsFromLogRows() {
