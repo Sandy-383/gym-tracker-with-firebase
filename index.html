@@ -329,6 +329,12 @@
                             </div>
 
                             <button class="btn btn-primary btn-block" id="saveLogBtn">Save session</button>
+                            <!-- Only shown when a saved session exists for this
+                                 date/exercise/session; de-emphasised because it
+                                 is destructive. -->
+                            <button type="button" class="btn btn-danger-ghost btn-block" id="deleteLogBtn" hidden>
+                                <svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>Delete this session
+                            </button>
                             <div id="logMessage" class="log-message" role="status"></div>
                         </div>
                     </div>

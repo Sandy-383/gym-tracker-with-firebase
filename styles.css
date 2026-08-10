@@ -381,6 +381,12 @@ select {
 .btn-ghost:hover { background: var(--page); color: var(--ink); }
 
 .btn-block { width: 100%; margin-top: 4px; }
+.btn-block + .btn-block { margin-top: 8px; }
+
+/* Destructive, so it stays quiet until hovered rather than competing with Save. */
+.btn-danger-ghost { background: transparent; color: var(--bad); border-color: transparent; }
+.btn-danger-ghost:hover { background: var(--bad-wash); border-color: var(--bad-wash); }
+.btn-danger-ghost[hidden] { display: none; }
 .btn-sm { padding: 6px 11px; font-size: 12px; }
 .btn[disabled] { opacity: 0.55; cursor: not-allowed; }
 

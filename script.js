@@ -796,7 +796,50 @@ function loadLogIntoForm(date, exerciseName, sessionNumber) {
         setText('logMessage', `Nothing logged for ${formatDate(date)} yet.`);
     }
 
+    // Deleting only makes sense when there is something saved to delete.
+    const deleteBtn = document.getElementById('deleteLogBtn');
+    if (deleteBtn) deleteBtn.hidden = !existing;
+
     return !!existing;
+}
+
+// Removes a whole logged session. Without this there is no way to take a session
+// back out of the progress charts: clearing every set row and saving is refused
+// (a session needs at least one set), so the old numbers would stay forever.
+function deleteLoggedSession() {
+    if (!currentExerciseForLogging || !currentExerciseForLogging.name) return;
+
+    const date = document.getElementById('sessionDate').value;
+    const sessionNumber = parseInt(document.getElementById('sessionNumber').value) || 1;
+    const name = currentExerciseForLogging.name;
+
+    const index = cachedData.logs.findIndex(log =>
+        log.date === date &&
+        log.exercise === name &&
+        (parseInt(log.sessionNumber) || 1) === sessionNumber
+    );
+    if (index === -1) return;
+
+    const log = cachedData.logs[index];
+    const confirmed = confirm(
+        `Delete the logged session for ${name} on ${formatDate(date)}?\n\n`
+        + 'It will be removed from your totals, charts and history.'
+    );
+    if (!confirmed) return;
+
+    cachedData.logs.splice(index, 1);
+    writeCache();
+    // null at the log's own path — a scoped delete, not a rewrite of the list.
+    pushUpdate({ ['logs/' + log.id]: null });
+
+    document.getElementById('logForm').hidden = true;
+    currentExerciseForLogging = null;
+
+    // Everything that derives from logs has to be recomputed, not just the list.
+    updateExercisesToday();
+    renderStats();
+    populateExerciseSelect();
+    updateCharts();   // also refreshes the table twin
 }
 
 // Changing the date must re-point the open form at the new day, not just
@@ -877,6 +920,10 @@ function logExercise() {
     currentExerciseForLogging.date = curDate;
     currentExerciseForLogging.sessionNumber = curSessionNumber;
 
+    // There is now a saved session here, so it can be deleted.
+    const deleteBtn = document.getElementById('deleteLogBtn');
+    if (deleteBtn) deleteBtn.hidden = false;
+
     // Compare with next session for the same exercise (chronological)
     const comparison = compareWithNextSession(Object.assign({ id: logId }, newLog), getLogsData());
 
@@ -899,6 +946,9 @@ function setupSetsLogUI() {
 
     const saveBtn = document.getElementById('saveLogBtn');
     if (saveBtn) saveBtn.addEventListener('click', (e) => { e.preventDefault(); logExercise(); });
+
+    const deleteBtn = document.getElementById('deleteLogBtn');
+    if (deleteBtn) deleteBtn.addEventListener('click', (e) => { e.preventDefault(); deleteLoggedSession(); });
 
     // Ensure at least one set row exists
     renderSetsForLog([]);
