@@ -1384,12 +1384,76 @@ function renderHistoryTable() {
 
 // ==================== PWA ====================
 
-// Relative path on purpose: GitHub Pages serves this from /<repo>/, so an
-// absolute '/sw.js' would 404 and the scope would be wrong.
-if ('serviceWorker' in navigator) {
+// How a deploy reaches an already-installed app.
+//
+// The new worker installs and then sits in "waiting" (sw.js deliberately does
+// not call skipWaiting). We surface that as a banner; the reload happens only
+// when the user taps Update, so the app can never swap out mid-set. Ignore it
+// and the new version applies on the next cold start anyway.
+function showUpdateBanner(worker) {
+    const banner = document.getElementById('updateBanner');
+    const button = document.getElementById('updateBtn');
+    const dismiss = document.getElementById('updateDismiss');
+    if (!banner || !button || !worker) return;
+
+    banner.hidden = false;
+    document.body.classList.add('has-update');
+
+    button.onclick = () => {
+        button.disabled = true;
+        button.textContent = 'Updating…';
+        // Tells the waiting worker to take over; controllerchange then reloads.
+        worker.postMessage('SKIP_WAITING');
+    };
+
+    if (dismiss) dismiss.onclick = () => {
+        banner.hidden = true;
+        document.body.classList.remove('has-update');
+    };
+}
+
+function initServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+
+    let reloading = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (reloading) return;   // controllerchange can fire more than once
+        reloading = true;
+        window.location.reload();
+    });
+
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(err => {
+        // Relative path on purpose: GitHub Pages serves this from /<repo>/, so an
+        // absolute '/sw.js' would 404 and the scope would be wrong.
+        navigator.serviceWorker.register('sw.js').then(registration => {
+            // A worker left waiting by an earlier visit. The controller check
+            // distinguishes an update from a very first install — on a first
+            // install there is nothing to update *from*, so no banner.
+            if (registration.waiting && navigator.serviceWorker.controller) {
+                showUpdateBanner(registration.waiting);
+            }
+
+            registration.addEventListener('updatefound', () => {
+                const incoming = registration.installing;
+                if (!incoming) return;
+                incoming.addEventListener('statechange', () => {
+                    if (incoming.state === 'installed' && navigator.serviceWorker.controller) {
+                        showUpdateBanner(incoming);
+                    }
+                });
+            });
+
+            // Installed apps can stay open for days, so poll, and re-check
+            // whenever the app is brought back to the foreground.
+            const check = () => registration.update().catch(() => {});
+            setInterval(check, 60 * 60 * 1000);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') check();
+            });
+        }).catch(err => {
             console.warn('Service worker registration failed:', err);
         });
     });
 }
+
+initServiceWorker();

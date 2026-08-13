@@ -644,6 +644,68 @@ select {
 .data-table .empty-cell { color: var(--ink-muted); padding: 26px 12px; text-align: center; }
 .data-table tbody tr:hover .empty-cell { background: transparent; }
 
+/* ---------------- Update banner ----------------
+   Bottom-anchored so it never covers the topbar or the tab switcher, and
+   clear of the home indicator on a phone. */
+.update-banner {
+    position: fixed;
+    left: 50%;
+    bottom: max(16px, env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    z-index: 60;
+
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: calc(100vw - 24px);
+    padding: 10px 10px 10px 14px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    box-shadow: 0 8px 28px rgba(16, 24, 40, 0.18), 0 2px 6px rgba(16, 24, 40, 0.08);
+    animation: update-in-center 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.update-banner[hidden] { display: none; }
+/* Set while the banner is up so the last row can still be scrolled clear of it
+   — a fixed bar would otherwise permanently hide the bottom of the page. */
+body.has-update { padding-bottom: calc(max(56px, env(safe-area-inset-bottom)) + 68px); }
+.update-banner .icon { color: var(--accent); flex: none; }
+.update-text {
+    font-size: 13px;
+    font-weight: 550;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.update-banner .btn { flex: none; border-radius: 999px; }
+.update-dismiss { width: 28px; height: 28px; }
+.update-dismiss:hover { background: rgba(17, 24, 39, 0.06); border-color: transparent; color: var(--ink); }
+
+/* Base state is the resting state, so prefers-reduced-motion (which kills
+   animation outright) leaves the banner visible rather than invisible.
+   Two names rather than redefining one inside a media query: engines differ on
+   whether a re-declared @keyframes in a non-matching block still registers. */
+@keyframes update-in-center {
+    from { opacity: 0; transform: translateX(-50%) translateY(14px); }
+    to   { opacity: 1; transform: translateX(-50%); }
+}
+@keyframes update-in-flush {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* Full-width on a phone: a centred pill would crowd the edges. */
+@media (max-width: 480px) {
+    .update-banner {
+        left: 12px;
+        right: 12px;
+        transform: none;
+        max-width: none;
+        animation-name: update-in-flush;
+    }
+}
+
 /* ---------------- Empty state ---------------- */
 .empty-state {
     display: flex;

@@ -1,0 +1,7 @@
+# Vendored third-party libraries: keep them byte-identical to what was
+# downloaded (Chart.js 4.4.1, Firebase 10.7.0). Line-ending conversion would
+# silently rewrite them and make integrity impossible to verify against upstream.
+vendor/** -text
+
+# Binary assets, never diffed or converted.
+*.png binary

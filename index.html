@@ -65,7 +65,22 @@
             <path d="M8.6 6.6A5 5 0 0117 9.1a3.6 3.6 0 012.6 5.9"/>
             <path d="M3.5 3.5l17 17"/>
         </symbol>
+        <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 12a8 8 0 10-2.3 5.6"/>
+            <path d="M20 5.5V12h-6.5"/>
+        </symbol>
     </defs></svg>
+
+    <!-- Shown when a newer deploy has installed and is waiting. Sits above
+         everything and never reloads on its own — see initServiceWorker(). -->
+    <div class="update-banner" id="updateBanner" hidden>
+        <svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg>
+        <span class="update-text" id="updateText">New version available</span>
+        <button type="button" class="btn btn-primary btn-sm" id="updateBtn">Update</button>
+        <button type="button" class="icon-btn update-dismiss" id="updateDismiss" aria-label="Dismiss until next launch">
+            <svg class="icon" aria-hidden="true"><use href="#i-x"/></svg>
+        </button>
+    </div>
 
     <!-- ==================== AUTH GATE ====================
          Shown until a signed-in user is confirmed. Access itself is enforced by
@@ -407,11 +422,14 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Firebase SDKs - Compat version for global access -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+    <!-- Vendored, not CDN-loaded. A cold start with no signal has to work: from a
+         CDN these four are a blank screen, and inside the installed app they are
+         the difference between "opens" and "doesn't". Pinned versions —
+         Chart.js 4.4.1, Firebase 10.7.0 — so behaviour can't shift underneath us. -->
+    <script src="vendor/chart.umd.js"></script>
+    <script src="vendor/firebase-app-compat.js"></script>
+    <script src="vendor/firebase-auth-compat.js"></script>
+    <script src="vendor/firebase-database-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="script.js"></script>
 </body>
