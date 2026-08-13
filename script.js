@@ -1362,8 +1362,15 @@ function renderHistoryTable() {
 
     const rows = logsForSelectedExercise().slice().reverse(); // newest first
 
+    // When the filter already names the exercise, the column just repeats that
+    // one value on every row — pure noise, and on a phone it is the difference
+    // between the table fitting and being scrolled sideways.
+    const showExercise = !document.getElementById('exerciseSelect').value;
+    const header = document.getElementById('thExercise');
+    if (header) header.hidden = !showExercise;
+
     if (rows.length === 0) {
-        body.innerHTML = `<tr><td colspan="6" class="empty-cell">No sessions logged yet.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="${showExercise ? 6 : 5}" class="empty-cell">No sessions logged yet.</td></tr>`;
         return;
     }
 
@@ -1373,7 +1380,7 @@ function renderHistoryTable() {
         return `
             <tr>
                 <td>${esc(formatDate(log.date))}</td>
-                <td>${esc(log.exercise)}</td>
+                ${showExercise ? `<td>${esc(log.exercise)}</td>` : ''}
                 <td>${esc(sessionLabel(log))}</td>
                 <td>${esc(sets)}</td>
                 <td class="num">${repsOf(log)}</td>
