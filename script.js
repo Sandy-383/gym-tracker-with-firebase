@@ -3,6 +3,69 @@ let currentExerciseForLogging = null;
 let repsChart = null;
 let weightChart = null;
 
+// ==================== WORKOUT IMAGERY ====================
+// Centralized here so a muscle group's photo can be swapped from one place.
+// Keyed by muscle group, not by day number: the image for a given day comes
+// from what that day's exercises actually are (see inferMuscleGroup below),
+// so editing the plan changes the photo automatically — nothing to update
+// in a second place. All photos: Unsplash License (free, no attribution
+// required).
+const MUSCLE_GROUP_IMAGES = {
+    chest:     'https://images.unsplash.com/photo-1534368959876-26bf04f2c947?q=80&w=1200&auto=format&fit=crop',
+    back:      'https://images.unsplash.com/photo-1605296867424-35fc25c9212a?q=80&w=1200&auto=format&fit=crop',
+    legs:      'https://images.unsplash.com/photo-1709315859957-3b3583bf364c?q=80&w=1200&auto=format&fit=crop',
+    shoulders: 'https://images.unsplash.com/photo-1554344728-77cf90d9ed26?q=80&w=1200&auto=format&fit=crop',
+    arms:      'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=1200&auto=format&fit=crop',
+    cardio:    'https://images.unsplash.com/photo-1723117417817-a122a6d202d5?q=80&w=1200&auto=format&fit=crop',
+    rest:      'https://images.unsplash.com/photo-1637430308606-86576d8fef3c?q=80&w=1200&auto=format&fit=crop'
+};
+
+// Keyword -> muscle group, checked as a case-insensitive substring against
+// each planned exercise's name. Deliberately no bare "press" (chest/shoulder/
+// leg press all collide on it) — compound terms only where a word is ambiguous
+// alone.
+const MUSCLE_GROUP_KEYWORDS = [
+    ['chest', ['bench', 'chest', 'pec', 'fly', 'flye', 'push-up', 'pushup', 'dip']],
+    ['back', ['row', 'pulldown', 'pull-up', 'pullup', 'lat pull', 'lat-pull', 'deadlift', 'shrug']],
+    ['legs', ['squat', 'leg', 'lunge', 'calf', 'hamstring', 'quad', 'glute', 'hip thrust']],
+    ['shoulders', ['shoulder', 'overhead press', 'ohp', 'lateral raise', 'delt', 'military press', 'arnold press', 'front raise']],
+    ['arms', ['curl', 'tricep', 'bicep', 'skull crusher', 'kickback']],
+    ['cardio', ['run', 'sprint', 'bike', 'cycling', 'treadmill', 'cardio', 'hiit', 'jump rope', 'elliptical', 'rowing machine', 'row machine']]
+];
+
+// Word-boundary match for single words (so "run" doesn't fire on "trUNk
+// rotation"); plain substring match for multi-word/hyphenated phrases,
+// which are already specific enough not to collide.
+function nameHasKeyword(name, keyword) {
+    if (keyword.indexOf(' ') !== -1 || keyword.indexOf('-') !== -1) {
+        return name.indexOf(keyword) !== -1;
+    }
+    return new RegExp('\\b' + keyword.trim() + '\\b').test(name);
+}
+
+// Real, derived from the day's actual planned exercises — never a fixed
+// day-number lookup. Majority vote across the day's exercise names; empty
+// or unrecognised days fall back to a neutral "rest" image.
+function inferMuscleGroup(exercises) {
+    if (!exercises || !exercises.length) return 'rest';
+
+    const tally = {};
+    exercises.forEach(ex => {
+        const name = String((ex && ex.name) || '').toLowerCase();
+        const hit = MUSCLE_GROUP_KEYWORDS.find(([, keywords]) => keywords.some(kw => nameHasKeyword(name, kw)));
+        if (hit) tally[hit[0]] = (tally[hit[0]] || 0) + 1;
+    });
+
+    const groups = Object.keys(tally);
+    if (!groups.length) return 'rest';
+    groups.sort((a, b) => tally[b] - tally[a]);
+    return groups[0];
+}
+
+function imageForMuscleGroup(group) {
+    return MUSCLE_GROUP_IMAGES[group] || MUSCLE_GROUP_IMAGES.rest;
+}
+
 // ==================== FIREBASE / SESSION STATE ====================
 
 const fb = window.gymFirebase || { ready: false, error: 'config-missing', db: null, auth: null };
@@ -22,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Everything here is data-independent, so it is safe before sign-in.
     wireAuthUI();
     wireDashboardInputs();
+    wireSheetUI();
     setupSetsLogUI();
     initChartDefaults();
     setTodayDate();
@@ -54,6 +118,7 @@ function handleAuthChange(user) {
     }
 
     setText('brandSub', user.email || 'Signed in');
+    setText('profileEmail', user.email || 'Signed in');
 
     // Hydrate from this account's own cache first so an offline launch still shows
     // the log instead of an indefinite spinner. The snapshot reconciles it later.
@@ -136,22 +201,24 @@ function showApp(visible) {
     // dark background also covers mobile overscroll past the body.
     document.documentElement.classList.toggle('auth-mode', !visible);
 
-    // Match the phone's status bar to whichever surface is showing; a white bar
-    // above the dark login reads as a rendering bug when installed.
-    const themeColor = document.querySelector('meta[name="theme-color"]');
-    if (themeColor) themeColor.setAttribute('content', visible ? '#ffffff' : '#07080a');
+    // Both the login backdrop and the app's topbar are the same dark navy,
+    // so the status bar colour never actually needs to change on sign-in —
+    // the meta tag's initial value in index.html already covers both.
 }
 
 function renderAll() {
     selectDay(currentDay);
     updateDashboard();
+    renderGreeting();
 }
 
 // `.info/connected` is readable regardless of the security rules.
 function watchConnection() {
     fb.db.ref('.info/connected').on('value', snap => {
+        const online = snap.val() === true;
         const badge = document.getElementById('offlineBadge');
-        if (badge) badge.hidden = snap.val() === true;
+        if (badge) badge.hidden = online;
+        setText('profileConnectionStatus', online ? 'Online' : 'Offline — changes will sync later');
     });
 }
 
@@ -258,6 +325,9 @@ function wireAuthUI() {
 
     const deniedSignOut = document.getElementById('deniedSignOut');
     if (deniedSignOut) deniedSignOut.addEventListener('click', () => fb.auth && fb.auth.signOut());
+
+    const profileSignOutBtn = document.getElementById('profileSignOutBtn');
+    if (profileSignOutBtn) profileSignOutBtn.addEventListener('click', () => fb.auth && fb.auth.signOut());
 
     const recheck = document.getElementById('recheckBtn');
     if (recheck) recheck.addEventListener('click', () => {
@@ -371,9 +441,205 @@ function setHTML(id, value) {
     if (el) el.innerHTML = value;
 }
 
+// Counts a stat tile up from its current displayed value to `target`,
+// re-formatting on every frame via `formatter` (e.g. compactNumber). Skips
+// straight to the final value under prefers-reduced-motion.
+function animateCountUp(id, target, formatter) {
+    const el = document.getElementById(id);
+    if (!el || !isFinite(target)) return;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        el.innerHTML = formatter(target);
+        return;
+    }
+
+    const duration = 600;
+    const start = performance.now();
+
+    function frame(now) {
+        const p = Math.min(1, (now - start) / duration);
+        const eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
+        el.innerHTML = formatter(Math.round(target * eased));
+        if (p < 1) requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+}
+
 function setTodayDate() {
     const input = document.getElementById('sessionDate');
     if (input && !input.value) input.value = toDateKey(new Date());
+}
+
+// Derives a display name from the account email (e.g. "sandy.k92@x.com" -> "Sandy").
+// There is no separate profile/display-name field in the data model, so this
+// is real derived data, not a fabricated one.
+function greetingNameFromEmail(email) {
+    if (!email) return 'there';
+    const local = email.split('@')[0] || '';
+    const token = local.split(/[._+0-9-]+/).filter(Boolean)[0] || local;
+    return token.charAt(0).toUpperCase() + token.slice(1);
+}
+
+function renderGreeting() {
+    const name = greetingNameFromEmail(currentUser && currentUser.email);
+    setText('greetingHi', `Hi ${name} \u{1F44B}`);
+    setText('greetingAvatar', name.charAt(0).toUpperCase());
+    setText('profileAvatar', name.charAt(0).toUpperCase());
+
+    const streak = trainingStreakWeeks(getLogsData());
+    setText('greetingSub', streak
+        ? `\u{1F525} ${streak}-week streak — keep it going.`
+        : "Let's build your first streak this week.");
+}
+
+// ----------------- Add Exercise bottom sheet -----------------
+function wireSheetUI() {
+    const backdrop = document.getElementById('addExerciseSheet');
+    if (backdrop) backdrop.addEventListener('click', e => {
+        if (e.target === backdrop) closeAddExerciseSheet();
+    });
+}
+
+function handleSheetKeydown(e) {
+    if (e.key === 'Escape') closeAddExerciseSheet();
+}
+
+function openAddExerciseSheet() {
+    const sheet = document.getElementById('addExerciseSheet');
+    if (!sheet) return;
+    setText('sheetDayHint', `Adding to Day ${currentDay}`);
+    sheet.hidden = false;
+    document.addEventListener('keydown', handleSheetKeydown);
+    if (!window.matchMedia('(pointer: coarse)').matches) {
+        const input = document.getElementById('exerciseName');
+        if (input) input.focus();
+    }
+}
+
+function closeAddExerciseSheet() {
+    const sheet = document.getElementById('addExerciseSheet');
+    if (!sheet) return;
+    sheet.hidden = true;
+    document.removeEventListener('keydown', handleSheetKeydown);
+}
+
+// ----------------- Progress ring -----------------
+// Sets stroke-dasharray/offset from the circle's own radius, so the markup
+// controls the ring's size and this stays purely a percentage renderer.
+function renderRing(circleId, valueId, pct) {
+    const circle = document.getElementById(circleId);
+    if (!circle) return;
+    const clamped = Math.max(0, Math.min(100, pct));
+    const r = circle.r.baseVal.value;
+    const circ = 2 * Math.PI * r;
+    circle.style.setProperty('--ring-circ', circ);
+    circle.style.setProperty('--ring-offset', circ - (circ * clamped) / 100);
+    setText(valueId, clamped + '%');
+}
+
+// Real, derived-from-data progress for whatever day/date/session is
+// currently selected on Home — the same filter logic updateExercisesToday()
+// already uses, factored out so the hero card and ring can share it.
+function computeTodayProgress() {
+    const sessionDate = document.getElementById('sessionDate').value;
+    const sessionDay = parseInt(document.getElementById('sessionDay').value) || 1;
+    const sessionNumber = parseInt(document.getElementById('sessionNumber').value) || 1;
+    const exercises = getScheduleData()[`day${sessionDay}`] || [];
+    const logs = getLogsData();
+
+    const completed = exercises.filter(ex => logs.some(log =>
+        log.date === sessionDate &&
+        log.exercise === ex.name &&
+        (parseInt(log.sessionNumber) || 1) === sessionNumber
+    )).length;
+    const total = exercises.length;
+    const pct = total ? Math.round((completed / total) * 100) : 0;
+
+    return { sessionDay, sessionDate, total, completed, pct, exercises };
+}
+
+// ----------------- Weekly Plan preview (Home) -----------------
+// Real, derived from the same schedule the Plan tab edits — a day's dot
+// lights up when it has at least one planned exercise, no fabricated data.
+function renderWeekStrip() {
+    const container = document.getElementById('weekStrip');
+    if (!container) return;
+    const schedule = getScheduleData();
+    const currentSessionDay = parseInt(document.getElementById('sessionDay').value) || 1;
+
+    container.innerHTML = Array.from({ length: 7 }, (_, i) => i + 1).map(day => {
+        const exercises = schedule[`day${day}`] || [];
+        const hasPlan = exercises.length > 0;
+        return `
+            <button type="button" class="week-strip-day ${hasPlan ? 'has-plan' : ''} ${day === currentSessionDay ? 'is-today' : ''}"
+                    onclick="jumpToDay(${day})" aria-label="Day ${day}, ${exercises.length} exercise${exercises.length === 1 ? '' : 's'} planned">
+                <span class="week-strip-label">D${day}</span>
+                <span class="week-strip-dot"></span>
+                <span class="week-strip-count">${exercises.length || '—'}</span>
+            </button>
+        `;
+    }).join('');
+}
+
+// Points Home's own session-day input at the tapped day, reusing the exact
+// same update path the number input already drives — hero, ring, stats and
+// the exercise list all stay in sync from one source of truth.
+function jumpToDay(day) {
+    const input = document.getElementById('sessionDay');
+    if (!input) return;
+    input.value = day;
+    updateExercisesToday();
+    populateExerciseSelect();
+    renderWeekStrip();
+}
+
+function scrollWeekStrip(direction) {
+    const container = document.getElementById('weekStrip');
+    if (container) container.scrollBy({ left: direction * 120, behavior: 'smooth' });
+}
+
+function focusTodayExercises() {
+    const container = document.getElementById('exercisesToday');
+    if (!container) return;
+    container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // Jump straight into logging the next undone exercise, if there is one.
+    const next = container.querySelector('.exercise-card.is-clickable:not(.completed)');
+    if (next) setTimeout(() => next.click(), 350);
+}
+
+function renderHero() {
+    const heroCard = document.getElementById('heroCard');
+    if (!heroCard) return;
+    const { sessionDay, total, completed, pct, exercises } = computeTodayProgress();
+
+    // Picture follows the day's actual planned exercises, not a fixed
+    // day-number lookup — re-inferred on every render so editing the plan
+    // (or switching days) updates the photo automatically.
+    const group = inferMuscleGroup(exercises);
+    heroCard.style.setProperty('--hero-photo', `url('${imageForMuscleGroup(group)}')`);
+    const groupLabel = group !== 'rest' ? group.charAt(0).toUpperCase() + group.slice(1) + ' · ' : '';
+
+    setText('heroTitle', `Day ${sessionDay}`);
+    const ctaBtn = document.getElementById('heroCtaBtn');
+
+    if (total === 0) {
+        heroCard.classList.add('is-empty');
+        setText('heroMeta', 'Nothing planned for this day yet.');
+        setText('heroCtaLabel', 'Plan this day');
+        if (ctaBtn) ctaBtn.onclick = () => switchTab('planner');
+    } else {
+        heroCard.classList.remove('is-empty');
+        setHTML('heroMeta', `${groupLabel}${total} exercise${total === 1 ? '' : 's'}<span class="dot"></span>${completed} of ${total} done`);
+        setText('heroCtaLabel', completed >= total ? 'Workout complete' : 'Start Workout');
+        if (ctaBtn) ctaBtn.onclick = focusTodayExercises;
+    }
+
+    const fill = document.getElementById('heroProgressFill');
+    if (fill) fill.style.setProperty('--pct', pct + '%');
+
+    renderRing('todayRing', 'todayRingValue', pct);
+    setText('todayProgressCopy', total ? `${completed} / ${total} exercises completed` : 'Nothing planned yet');
 }
 
 function wireDashboardInputs() {
@@ -402,7 +668,7 @@ function initChartDefaults() {
     if (typeof Chart === 'undefined') return;
     Chart.defaults.font.family = cssVar('--sans', 'system-ui, sans-serif');
     Chart.defaults.font.size = 11;
-    Chart.defaults.color = cssVar('--ink-muted', '#6b7280');
+    Chart.defaults.color = cssVar('--ink-muted', '#53657D');
 }
 
 // ==================== DATA MANAGEMENT ====================
@@ -578,28 +844,23 @@ function sanitizeLog(log) {
 
 // ==================== TAB SWITCHING ====================
 
+// Two nav-button groups point at the same tabs (top nav on desktop, bottom
+// nav on mobile — both visible in the DOM at once, CSS decides which shows),
+// so active state is driven by a shared data-tab attribute rather than the
+// clicked element itself.
 function switchTab(tabName) {
-    // Hide all tabs
     document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.remove('active');
+        tab.classList.toggle('active', tab.id === tabName);
+    });
+    document.querySelectorAll('[data-tab]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
     });
 
-    // Remove active class from all nav buttons
-    document.querySelectorAll('.nav-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-
-    // Show selected tab
-    document.getElementById(tabName).classList.add('active');
-
-    // Add active class to clicked button
-    if (event && event.target) {
-        event.target.classList.add('active');
-    }
-
-    // Update dashboard when switching to it
-    if (tabName === 'dashboard') {
+    if (tabName === 'home') {
         updateDashboard();
+    } else if (tabName === 'progress') {
+        populateExerciseSelect();
+        updateCharts(); // re-render now that the canvases are visible/sized
     }
 }
 
@@ -622,13 +883,9 @@ function switchChartView(view) {
 function selectDay(dayNumber) {
     currentDay = dayNumber;
 
-    // Update active button
-    document.querySelectorAll('.day-btn').forEach((btn, idx) => {
-        if (idx + 1 === dayNumber) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
+    // Update active pill
+    document.querySelectorAll('.day-pill').forEach(btn => {
+        btn.classList.toggle('active', parseInt(btn.dataset.day) === dayNumber);
     });
 
     // Update title
@@ -657,6 +914,9 @@ function addExerciseToDay() {
     input.value = '';
     displayExercisesForDay(currentDay);
     populateExerciseSelect();
+    renderHero(); // exercise count may have changed for the day currently shown on Home
+    renderWeekStrip();
+    closeAddExerciseSheet();
 }
 
 function displayExercisesForDay(dayNumber) {
@@ -670,15 +930,15 @@ function displayExercisesForDay(dayNumber) {
         container.innerHTML = `
             <p class="empty-state">
                 <svg class="icon" aria-hidden="true"><use href="#i-list"/></svg>
-                Nothing planned for this day yet. Add your first exercise above.
+                Nothing planned for this day yet. Tap "Add Exercise" above.
             </p>`;
         return;
     }
 
     container.innerHTML = exercises.map((exercise, idx) => `
-        <div class="exercise-item">
+        <div class="exercise-card">
             <div class="exercise-main">
-                <span class="exercise-meta">${idx + 1}</span>
+                <span class="exercise-index">${idx + 1}</span>
                 <span class="exercise-name">${esc(exercise.name)}</span>
             </div>
             <button class="icon-btn" type="button" aria-label="Delete ${esc(exercise.name)}"
@@ -697,6 +957,8 @@ function deleteExercise(day, exerciseId) {
     saveScheduleDay(day, exercises);
     displayExercisesForDay(day);
     populateExerciseSelect();
+    renderHero(); // the day's exercise mix may have changed, so its image/count might too
+    renderWeekStrip();
 }
 
 // ==================== DASHBOARD FUNCTIONALITY ====================
@@ -706,6 +968,7 @@ function updateDashboard() {
     updateExercisesToday();
     populateExerciseSelect();
     updateCharts(); // also refreshes the table twin
+    renderWeekStrip();
 }
 
 function updateExercisesToday() {
@@ -724,8 +987,9 @@ function updateExercisesToday() {
         container.innerHTML = `
             <p class="empty-state">
                 <svg class="icon" aria-hidden="true"><use href="#i-list"/></svg>
-                No exercises planned for day ${sessionDay}. Add some in the Planner.
+                No exercises planned for day ${sessionDay}. Add some in Plan.
             </p>`;
+        renderHero();
         return;
     }
 
@@ -742,17 +1006,21 @@ function updateExercisesToday() {
         const totalReps = completed ? repsOf(sessionLogs[0]) : 0;
         // The name rides in a data attribute so quotes in it can't break the handler.
         return `
-            <div class="exercise-item is-clickable ${completed ? 'completed' : ''}"
+            <div class="exercise-card is-clickable ${completed ? 'completed' : ''}"
                  data-exercise="${esc(exerciseName)}"
                  onclick="selectExerciseForLogging(this.dataset.exercise, '${sessionDate}', ${sessionDay}, ${sessionNumber})">
                 <div class="exercise-main">
-                    <svg class="status-icon" aria-hidden="true"><use href="#i-${completed ? 'check' : 'circle'}"/></svg>
-                    <span class="exercise-name">${esc(exerciseName)}</span>
+                    <span class="exercise-badge"><svg class="icon" aria-hidden="true"><use href="#i-${completed ? 'check' : 'circle'}"/></svg></span>
+                    <div class="exercise-copy">
+                        <span class="exercise-name">${esc(exerciseName)}</span>
+                        <span class="exercise-meta">${completed ? totalReps + ' reps' : 'Not logged'}</span>
+                    </div>
                 </div>
-                <span class="exercise-meta">${completed ? totalReps + ' reps' : 'Not logged'}</span>
             </div>
         `;
     }).join('');
+
+    renderHero();
 }
 
 function selectExerciseForLogging(exerciseName, date, dayNumber, sessionNumber) {
@@ -796,50 +1064,7 @@ function loadLogIntoForm(date, exerciseName, sessionNumber) {
         setText('logMessage', `Nothing logged for ${formatDate(date)} yet.`);
     }
 
-    // Deleting only makes sense when there is something saved to delete.
-    const deleteBtn = document.getElementById('deleteLogBtn');
-    if (deleteBtn) deleteBtn.hidden = !existing;
-
     return !!existing;
-}
-
-// Removes a whole logged session. Without this there is no way to take a session
-// back out of the progress charts: clearing every set row and saving is refused
-// (a session needs at least one set), so the old numbers would stay forever.
-function deleteLoggedSession() {
-    if (!currentExerciseForLogging || !currentExerciseForLogging.name) return;
-
-    const date = document.getElementById('sessionDate').value;
-    const sessionNumber = parseInt(document.getElementById('sessionNumber').value) || 1;
-    const name = currentExerciseForLogging.name;
-
-    const index = cachedData.logs.findIndex(log =>
-        log.date === date &&
-        log.exercise === name &&
-        (parseInt(log.sessionNumber) || 1) === sessionNumber
-    );
-    if (index === -1) return;
-
-    const log = cachedData.logs[index];
-    const confirmed = confirm(
-        `Delete the logged session for ${name} on ${formatDate(date)}?\n\n`
-        + 'It will be removed from your totals, charts and history.'
-    );
-    if (!confirmed) return;
-
-    cachedData.logs.splice(index, 1);
-    writeCache();
-    // null at the log's own path — a scoped delete, not a rewrite of the list.
-    pushUpdate({ ['logs/' + log.id]: null });
-
-    document.getElementById('logForm').hidden = true;
-    currentExerciseForLogging = null;
-
-    // Everything that derives from logs has to be recomputed, not just the list.
-    updateExercisesToday();
-    renderStats();
-    populateExerciseSelect();
-    updateCharts();   // also refreshes the table twin
 }
 
 // Changing the date must re-point the open form at the new day, not just
@@ -920,10 +1145,6 @@ function logExercise() {
     currentExerciseForLogging.date = curDate;
     currentExerciseForLogging.sessionNumber = curSessionNumber;
 
-    // There is now a saved session here, so it can be deleted.
-    const deleteBtn = document.getElementById('deleteLogBtn');
-    if (deleteBtn) deleteBtn.hidden = false;
-
     // Compare with next session for the same exercise (chronological)
     const comparison = compareWithNextSession(Object.assign({ id: logId }, newLog), getLogsData());
 
@@ -946,9 +1167,6 @@ function setupSetsLogUI() {
 
     const saveBtn = document.getElementById('saveLogBtn');
     if (saveBtn) saveBtn.addEventListener('click', (e) => { e.preventDefault(); logExercise(); });
-
-    const deleteBtn = document.getElementById('deleteLogBtn');
-    if (deleteBtn) deleteBtn.addEventListener('click', (e) => { e.preventDefault(); deleteLoggedSession(); });
 
     // Ensure at least one set row exists
     renderSetsForLog([]);
@@ -1146,7 +1364,7 @@ function renderStats() {
     // Sessions
     const sessions = new Set(logs.map(sessionKeyOf));
     const thisWeekSessions = new Set(logs.filter(inThisWeek).map(sessionKeyOf)).size;
-    setText('statSessions', compactNumber(sessions.size));
+    animateCountUp('statSessions', sessions.size, compactNumber);
     setHTML('statSessionsFoot', thisWeekSessions
         ? `<span class="up"><svg class="icon" aria-hidden="true"><use href="#i-up"/></svg>${thisWeekSessions}</span> in the last 7 days`
         : 'None in the last 7 days');
@@ -1155,7 +1373,7 @@ function renderStats() {
     const totalReps = logs.reduce((s, l) => s + repsOf(l), 0);
     const thisWeekReps = logs.filter(inThisWeek).reduce((s, l) => s + repsOf(l), 0);
     const prevWeekReps = logs.filter(inPrevWeek).reduce((s, l) => s + repsOf(l), 0);
-    setText('statReps', compactNumber(totalReps));
+    animateCountUp('statReps', totalReps, compactNumber);
     setHTML('statRepsFoot', deltaMarkup(thisWeekReps - prevWeekReps, ' reps', 'previous week'));
 
     // Best single set
@@ -1168,7 +1386,7 @@ function renderStats() {
         });
     });
     if (best) {
-        setHTML('statBest', `${best.reps}<span class="unit">reps</span>`);
+        animateCountUp('statBest', best.reps, n => `${n}<span class="unit">reps</span>`);
         setText('statBestFoot', `${best.exercise} · ${formatDate(best.date)}`);
     } else {
         setText('statBest', '—');
@@ -1177,7 +1395,11 @@ function renderStats() {
 
     // Streak
     const streak = trainingStreakWeeks(logs);
-    setHTML('statStreak', streak ? `${streak}<span class="unit">${streak === 1 ? 'week' : 'weeks'}</span>` : '0');
+    if (streak) {
+        animateCountUp('statStreak', streak, n => `${n}<span class="unit">${streak === 1 ? 'week' : 'weeks'}</span>`);
+    } else {
+        setText('statStreak', '0');
+    }
     setText('statStreakFoot', streak ? 'Consecutive weeks trained' : 'No recent activity');
 }
 
@@ -1232,10 +1454,10 @@ function destroyCharts() {
 // Shared chart chrome: recessive hairline grid, muted ticks, no legend
 // (single series — the caption names it), crosshair-style shared tooltip.
 function lineChartOptions(valueLabel, integersOnly) {
-    const ink = cssVar('--ink-2', '#4b5563');
-    const muted = cssVar('--ink-muted', '#6b7280');
-    const grid = cssVar('--grid', '#eef0f3');
-    const line = cssVar('--line', '#e5e7eb');
+    const ink = cssVar('--ink-2', '#1D3A5F');
+    const muted = cssVar('--ink-muted', '#53657D');
+    const grid = cssVar('--grid', 'rgba(16, 35, 63, 0.08)');
+    const line = cssVar('--line', 'rgba(16, 35, 63, 0.12)');
 
     return {
         responsive: true,
@@ -1245,8 +1467,10 @@ function lineChartOptions(valueLabel, integersOnly) {
         plugins: {
             legend: { display: false },
             tooltip: {
-                backgroundColor: '#ffffff',
-                titleColor: cssVar('--ink', '#111827'),
+                // Opaque chart-chrome token, not the translucent glass --card —
+                // a canvas-drawn tooltip has no backdrop-filter to soften it.
+                backgroundColor: cssVar('--card-solid', '#F8FAFC'),
+                titleColor: cssVar('--ink', '#10233F'),
                 bodyColor: ink,
                 borderColor: line,
                 borderWidth: 1,
@@ -1285,7 +1509,7 @@ function lineChartOptions(valueLabel, integersOnly) {
 function seriesStyle(color) {
     return {
         borderColor: color,
-        backgroundColor: withAlpha(color, 0.1),   // area wash, never a saturated block
+        backgroundColor: withAlpha(color, 0.16),   // area wash, never a saturated block
         borderWidth: 2,
         tension: 0.25,
         fill: true,
@@ -1293,7 +1517,7 @@ function seriesStyle(color) {
         pointRadius: 4,                            // 8px mark
         pointHoverRadius: 6,
         pointBackgroundColor: color,
-        pointBorderColor: cssVar('--card', '#ffffff'),
+        pointBorderColor: cssVar('--card-solid', '#F8FAFC'),
         pointBorderWidth: 2,                       // 2px surface ring
         pointHitRadius: 14                          // generous hit target
     };
@@ -1340,7 +1564,7 @@ function updateCharts() {
         type: 'line',
         data: {
             labels: labels,
-            datasets: [Object.assign({ label: 'Total reps', data: repsData }, seriesStyle(cssVar('--series-1', '#4f46e5')))]
+            datasets: [Object.assign({ label: 'Total reps', data: repsData }, seriesStyle(cssVar('--series-1', '#142B4A')))]
         },
         options: lineChartOptions('Total reps', true)
     });
@@ -1349,7 +1573,7 @@ function updateCharts() {
         type: 'line',
         data: {
             labels: labels,
-            datasets: [Object.assign({ label: 'Weight (kg)', data: weightData }, seriesStyle(cssVar('--series-2', '#eb6834')))]
+            datasets: [Object.assign({ label: 'Weight (kg)', data: weightData }, seriesStyle(cssVar('--series-2', '#4A7FB5')))]
         },
         options: lineChartOptions('Weight (kg)', false)
     });
@@ -1362,15 +1586,8 @@ function renderHistoryTable() {
 
     const rows = logsForSelectedExercise().slice().reverse(); // newest first
 
-    // When the filter already names the exercise, the column just repeats that
-    // one value on every row — pure noise, and on a phone it is the difference
-    // between the table fitting and being scrolled sideways.
-    const showExercise = !document.getElementById('exerciseSelect').value;
-    const header = document.getElementById('thExercise');
-    if (header) header.hidden = !showExercise;
-
     if (rows.length === 0) {
-        body.innerHTML = `<tr><td colspan="${showExercise ? 6 : 5}" class="empty-cell">No sessions logged yet.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="6" class="empty-cell">No sessions logged yet.</td></tr>`;
         return;
     }
 
@@ -1380,7 +1597,7 @@ function renderHistoryTable() {
         return `
             <tr>
                 <td>${esc(formatDate(log.date))}</td>
-                ${showExercise ? `<td>${esc(log.exercise)}</td>` : ''}
+                <td>${esc(log.exercise)}</td>
                 <td>${esc(sessionLabel(log))}</td>
                 <td>${esc(sets)}</td>
                 <td class="num">${repsOf(log)}</td>
@@ -1391,76 +1608,12 @@ function renderHistoryTable() {
 
 // ==================== PWA ====================
 
-// How a deploy reaches an already-installed app.
-//
-// The new worker installs and then sits in "waiting" (sw.js deliberately does
-// not call skipWaiting). We surface that as a banner; the reload happens only
-// when the user taps Update, so the app can never swap out mid-set. Ignore it
-// and the new version applies on the next cold start anyway.
-function showUpdateBanner(worker) {
-    const banner = document.getElementById('updateBanner');
-    const button = document.getElementById('updateBtn');
-    const dismiss = document.getElementById('updateDismiss');
-    if (!banner || !button || !worker) return;
-
-    banner.hidden = false;
-    document.body.classList.add('has-update');
-
-    button.onclick = () => {
-        button.disabled = true;
-        button.textContent = 'Updating…';
-        // Tells the waiting worker to take over; controllerchange then reloads.
-        worker.postMessage('SKIP_WAITING');
-    };
-
-    if (dismiss) dismiss.onclick = () => {
-        banner.hidden = true;
-        document.body.classList.remove('has-update');
-    };
-}
-
-function initServiceWorker() {
-    if (!('serviceWorker' in navigator)) return;
-
-    let reloading = false;
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (reloading) return;   // controllerchange can fire more than once
-        reloading = true;
-        window.location.reload();
-    });
-
+// Relative path on purpose: GitHub Pages serves this from /<repo>/, so an
+// absolute '/sw.js' would 404 and the scope would be wrong.
+if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        // Relative path on purpose: GitHub Pages serves this from /<repo>/, so an
-        // absolute '/sw.js' would 404 and the scope would be wrong.
-        navigator.serviceWorker.register('sw.js').then(registration => {
-            // A worker left waiting by an earlier visit. The controller check
-            // distinguishes an update from a very first install — on a first
-            // install there is nothing to update *from*, so no banner.
-            if (registration.waiting && navigator.serviceWorker.controller) {
-                showUpdateBanner(registration.waiting);
-            }
-
-            registration.addEventListener('updatefound', () => {
-                const incoming = registration.installing;
-                if (!incoming) return;
-                incoming.addEventListener('statechange', () => {
-                    if (incoming.state === 'installed' && navigator.serviceWorker.controller) {
-                        showUpdateBanner(incoming);
-                    }
-                });
-            });
-
-            // Installed apps can stay open for days, so poll, and re-check
-            // whenever the app is brought back to the foreground.
-            const check = () => registration.update().catch(() => {});
-            setInterval(check, 60 * 60 * 1000);
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'visible') check();
-            });
-        }).catch(err => {
+        navigator.serviceWorker.register('sw.js').catch(err => {
             console.warn('Service worker registration failed:', err);
         });
     });
 }
-
-initServiceWorker();

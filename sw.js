@@ -14,7 +14,7 @@
  * always reach the network — caching it would serve stale sessions and data.
  */
 
-const VERSION = 'v2';
+const VERSION = 'v4';
 const APP_CACHE = 'gym-app-' + VERSION;
 const VENDOR_CACHE = 'gym-vendor-' + VERSION;
 const NETWORK_TIMEOUT_MS = 3500;
@@ -29,17 +29,14 @@ const APP_SHELL = [
     'manifest.webmanifest',
     'icons/icon-192.png',
     'icons/icon-512.png',
-    'icons/icon-180.png'
+    'icons/icon-180.png',
+    'assets/bg.jpg'
 ];
 
-// Version-pinned local copies: the bytes behind these paths never change, so
-// they are cache-first and cost nothing on launch.
-const VENDOR_SHELL = [
-    'vendor/chart.umd.js',
-    'vendor/firebase-app-compat.js',
-    'vendor/firebase-auth-compat.js',
-    'vendor/firebase-database-compat.js'
-];
+// images.unsplash.com serves the Home hero card's photo (see --hero-photo in
+// styles.css) — cache-first so it works offline after the first load, same
+// treatment as the other pinned vendor assets.
+const VENDOR_HOSTS = ['cdn.jsdelivr.net', 'www.gstatic.com', 'images.unsplash.com'];
 
 // Live traffic — never intercepted.
 const BYPASS_PATTERNS = [
@@ -51,28 +48,17 @@ const BYPASS_PATTERNS = [
     'googletagmanager.com'
 ];
 
-function precache(cacheName, urls) {
-    return caches.open(cacheName).then(cache => Promise.all(
-        // Individually, so one 404 can't fail the whole install.
-        urls.map(url => cache.add(new Request(url, { cache: 'reload' })).catch(err => {
-            console.warn('[sw] could not precache', url, err);
-        }))
-    ));
-}
-
 self.addEventListener('install', event => {
-    // Deliberately NOT calling skipWaiting() here. A new worker installs and
-    // then sits in "waiting" so the page can offer an Update button, instead of
-    // swapping the app out from under someone mid-set. It activates only when
-    // the page sends SKIP_WAITING, or naturally on the next cold start.
-    event.waitUntil(Promise.all([
-        precache(APP_CACHE, APP_SHELL),
-        precache(VENDOR_CACHE, VENDOR_SHELL)
-    ]));
-});
-
-self.addEventListener('message', event => {
-    if (event.data === 'SKIP_WAITING') self.skipWaiting();
+    event.waitUntil(
+        caches.open(APP_CACHE)
+            // Individually, so one 404 can't fail the whole install.
+            .then(cache => Promise.all(
+                APP_SHELL.map(url => cache.add(new Request(url, { cache: 'reload' })).catch(err => {
+                    console.warn('[sw] could not precache', url, err);
+                }))
+            ))
+            .then(() => self.skipWaiting())
+    );
 });
 
 self.addEventListener('activate', event => {
@@ -95,18 +81,14 @@ self.addEventListener('fetch', event => {
 
     if (BYPASS_PATTERNS.some(pattern => url.hostname.indexOf(pattern) !== -1)) return;
 
-    if (url.origin !== self.location.origin) return;
-
-    // Pinned libraries: cache-first, so launch never waits on half a megabyte
-    // that is known not to have changed.
-    if (url.pathname.indexOf('/vendor/') !== -1) {
+    if (VENDOR_HOSTS.indexOf(url.hostname) !== -1) {
         event.respondWith(cacheFirst(request, VENDOR_CACHE));
         return;
     }
 
-    // App files: network-first, so a deploy is picked up rather than a stale
-    // mix of old JS against new HTML.
-    event.respondWith(networkFirst(request, APP_CACHE));
+    if (url.origin === self.location.origin) {
+        event.respondWith(networkFirst(request, APP_CACHE));
+    }
 });
 
 function cacheFirst(request, cacheName) {

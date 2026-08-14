@@ -1,48 +1,87 @@
 /* ============================================================
-   Gym Tracker — light UI system
-   Palette validated with the dataviz palette validator against
-   the #ffffff card surface (categorical, light):
-     series ΔE 31.4 protan / 39.2 normal, both marks >= 3:1.
-   Ink tokens checked for WCAG text contrast on #fff and #f6f7f9.
+   Gym Tracker — premium navy fitness UI
+   Bright, light navy/blue-gray system: solid colours only (no
+   gradients anywhere — see the header note on each component that
+   used to have one). Frosted-white glass cards float on a flat light
+   page; the top/bottom nav bars are the one deliberately dark-navy
+   surface, for contrast and wayfinding. The sign-in gate keeps its
+   own dark cinematic treatment (a distinct "entry moment", matching
+   this app's original design before any of these reskins) but its
+   gradients are gone too.
+
+   Contrast verified against the actual surfaces text sits on:
+     ink (#10233F) on --page (#E8EEF5)        12.2:1
+     ink (#10233F) on --card-solid (#F8FAFC)   ~12.7:1
+     ink-2 (#1D3A5F) on --page                  8.0:1
+     ink-muted (#53657D) on --page              5.1:1
+     ink-muted (#53657D) on --card-solid        5.8:1
+     white on --accent (#142B4A) buttons       14.2:1
+     series-2 (#4A7FB5) non-text vs card       >3:1 (graphical, not text)
    ============================================================ */
 
 :root {
     color-scheme: light;
 
     /* Surfaces */
-    --page:        #f6f7f9;
-    --card:        #ffffff;
-    --sunken:      #fafbfc;
-    --line:        #e5e7eb;   /* hairline border */
-    --grid:        #eef0f3;   /* chart gridline, one step off surface */
+    --page:        #E8EEF5;                       /* flat page background */
+    --card:        rgba(255, 255, 255, 0.62);      /* glass card wash (blurred) */
+    --card-solid:  #F8FAFC;                        /* opaque fallback / chart chrome */
+    --field-bg:    rgba(255, 255, 255, 0.85);      /* inputs/pills on a card */
+    --field-border: rgba(16, 35, 63, 0.16);
+    --sunken:      rgba(16, 35, 63, 0.045);        /* recessed panel inside a card */
+    --line:        rgba(16, 35, 63, 0.12);         /* hairline border */
+    --grid:        rgba(16, 35, 63, 0.08);         /* chart gridline, one step off surface */
 
-    /* Ink — all >= 4.5:1 on both surfaces */
-    --ink:         #111827;   /* 17.7:1 */
-    --ink-2:       #4b5563;   /*  7.6:1 */
-    --ink-muted:   #6b7280;   /*  4.8:1 — also axis ticks */
+    /* Ink — all >= 4.5:1 on both --page and --card-solid */
+    --ink:         #10233F;                        /* dark navy text */
+    --ink-2:       #1D3A5F;                        /* medium navy */
+    --ink-muted:   #53657D;                        /* soft blue-gray — also axis ticks */
+    --ink-faint:   rgba(16, 35, 63, 0.38);         /* placeholders only */
 
-    /* Accent */
-    --accent:      #4f46e5;
-    --accent-ink:  #4338ca;
-    --accent-wash: #eef2ff;
-    --focus:       rgba(79, 70, 229, 0.18);
+    /* Navy accent family — one hue, varied by value. No purple, no gradients. */
+    --accent:      #142B4A;                        /* primary navy: buttons, active pills (white text 14.2:1) */
+    --accent-deep: #0B1B33;                        /* deep navy: nav bars */
+    --accent-mid:  #1D3A5F;                        /* medium navy: secondary emphasis */
+    --accent-ink:  var(--accent);                  /* same navy reads fine as text on light surfaces too */
+    --accent-wash: rgba(20, 43, 74, 0.08);
+    --focus:       rgba(20, 43, 74, 0.30);
 
-    /* Series (one per single-series chart) */
-    --series-1:    #4f46e5;
-    --series-2:    #eb6834;
+    /* Series (one per single-series chart) — both navy family, separated by value */
+    --series-1:    var(--accent);
+    --series-2:    #4A7FB5;
 
     /* Deltas / status — always shipped with an icon + label */
-    --good:        #046c40;   /* 6.5:1 */
+    --good:        #046c40;   /* 6.5:1 on light surfaces */
     --good-wash:   #e9f6ef;
     --bad:         #b42318;   /* 6.6:1 */
     --bad-wash:    #fdeceb;
 
-    --radius:      10px;
-    --radius-lg:   14px;
-    --shadow:      0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
+    /* Dark navy nav bars — the one deliberately dark surface outside the gate */
+    --nav-bg:        #0B1B33;
+    --nav-ink:       #FFFFFF;
+    --nav-ink-muted: rgba(255, 255, 255, 0.62);
+    --nav-line:      rgba(255, 255, 255, 0.12);
+
+    --radius-sm:   10px;   /* chips, icon buttons */
+    --radius:      18px;   /* standard cards */
+    --radius-lg:   28px;   /* hero card, sheet, nav bar */
+    --radius-full: 999px;  /* pills */
+    --shadow:      0 1px 2px rgba(16, 35, 63, 0.06), 0 14px 30px rgba(16, 35, 63, 0.12);
+
+    /* Local photo backdrop — only the sign-in gate uses this now (see
+       html.auth-mode below). Missing the file degrades gracefully. */
+    --app-photo:   url('assets/bg.jpg');
+
+    /* Hero card default photo (muscle-group images are swapped in per
+       selected day by script.js — see DAY_IMAGE_MAP). This is just the
+       "rest / no exercises" fallback shown before JS picks one. Unsplash
+       License (free, no attribution required). */
+    --hero-photo:  url('https://images.unsplash.com/photo-1637430308606-86576d8fef3c?q=80&w=1200&auto=format&fit=crop');
 
     --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
+
+html { background: #E8EEF5; }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -53,11 +92,11 @@ body {
     background: var(--page);
     color: var(--ink);
     min-height: 100vh;
-    padding: 28px 20px 56px;
+    padding: 24px 20px 96px;
     /* Respect notches / home indicators; falls back to the flat values above. */
     padding-left: max(20px, env(safe-area-inset-left));
     padding-right: max(20px, env(safe-area-inset-right));
-    padding-bottom: max(56px, env(safe-area-inset-bottom));
+    padding-bottom: calc(88px + env(safe-area-inset-bottom));
     -webkit-font-smoothing: antialiased;
     line-height: 1.5;
 }
@@ -65,55 +104,99 @@ body {
 .app[hidden], .gate[hidden] { display: none; }
 
 .app {
-    max-width: 1320px;
+    max-width: 1280px;
     margin: 0 auto;
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow);
-    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
 }
 
 .icon { width: 16px; height: 16px; flex: none; }
+.icon-flip { transform: scaleX(-1); }
 
-/* ---------------- Topbar ---------------- */
+/* ---------------- Topbar (desktop persistent nav) ----------------
+   The one deliberately dark-navy surface in the signed-in app, for
+   wayfinding contrast against the light page below it. */
 .topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 20px;
-    padding: 16px 24px;
-    border-bottom: 1px solid var(--line);
-    background: var(--card);
+    padding: 14px 20px;
+    background: var(--nav-bg);
+    border: 1px solid var(--nav-line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
 }
 
-.brand { display: flex; align-items: center; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
 
 .brand-mark {
     display: grid;
     place-items: center;
-    width: 36px; height: 36px;
-    border-radius: 9px;
+    width: 38px; height: 38px;
+    border-radius: 12px;
     background: var(--accent);
     color: #fff;
+    flex: none;
 }
-.brand-mark .icon { width: 19px; height: 19px; }
+.brand-mark .icon { width: 20px; height: 20px; }
 
-.brand-copy { display: flex; flex-direction: column; line-height: 1.25; }
-.brand-name { font-size: 15px; font-weight: 650; letter-spacing: -0.01em; }
-.brand-sub { font-size: 12px; color: var(--ink-muted); }
+.brand-copy { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.brand-name { font-size: 15px; font-weight: 650; letter-spacing: -0.01em; color: var(--nav-ink); }
+.brand-sub { font-size: 12px; color: var(--nav-ink-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Segmented control — used for nav and the chart/table switch */
+/* Desktop nav links — replace the old 2-item segmented control */
+.top-nav-links { display: flex; align-items: center; gap: 2px; }
+.top-nav-links .nav-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font: inherit;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--nav-ink-muted);
+    background: transparent;
+    border: 0;
+    padding: 9px 16px;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.top-nav-links .nav-btn:hover { color: var(--nav-ink); background: rgba(255, 255, 255, 0.08); }
+.top-nav-links .nav-btn.active { color: #fff; background: var(--accent); }
+.top-nav-links .nav-btn .icon { width: 15px; height: 15px; }
+
+.topbar-end { display: flex; align-items: center; gap: 10px; flex: none; }
+
+/* Connection state. Icon + label, so it never rests on colour. */
+.offline-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--nav-ink);
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid var(--nav-line);
+    border-radius: var(--radius-full);
+    padding: 4px 10px;
+    white-space: nowrap;
+}
+.offline-badge[hidden] { display: none; }
+.offline-badge .icon { width: 13px; height: 13px; }
+
+/* Generic pill toggle — used for the Chart/Table switch inside Progress.
+   (Top-level section nav uses .top-nav-links / .bottom-nav instead.) */
 .segmented {
     display: inline-flex;
     gap: 2px;
     padding: 3px;
-    background: var(--page);
+    background: var(--sunken);
     border: 1px solid var(--line);
-    border-radius: 9px;
+    border-radius: var(--radius-full);
 }
-
-.nav-btn, .view-btn {
+.view-btn {
     font: inherit;
     font-size: 13px;
     font-weight: 550;
@@ -121,39 +204,18 @@ body {
     background: transparent;
     border: 0;
     padding: 7px 16px;
-    border-radius: 7px;
+    border-radius: var(--radius-full);
     cursor: pointer;
     transition: background 0.15s ease, color 0.15s ease;
 }
-.nav-btn:hover, .view-btn:hover { color: var(--ink); background: rgba(17, 24, 39, 0.04); }
-.nav-btn.active, .view-btn.active {
-    background: var(--card);
-    color: var(--accent-ink);
-    box-shadow: var(--shadow);
-}
+.view-btn:hover { color: var(--ink); background: rgba(16, 35, 63, 0.05); }
+.view-btn.active { background: var(--card-solid); color: var(--accent); box-shadow: var(--shadow); }
 .segmented-sm .view-btn { padding: 5px 12px; font-size: 12px; }
 
-.topbar-end { display: flex; align-items: center; gap: 10px; flex: none; }
-
-/* Connection state. Icon + label, so it never rests on colour, and it uses the
-   neutral chip rather than an amber that can't clear 4.5:1 on white. */
-.offline-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--ink-2);
-    background: var(--sunken);
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    padding: 4px 10px;
-    white-space: nowrap;
-}
-.offline-badge[hidden] { display: none; }
-.offline-badge .icon { width: 13px; height: 13px; }
-
-/* ---------------- Auth gate ---------------- */
+/* ---------------- Auth gate ----------------
+   Deliberately kept dark/cinematic — a distinct entry moment, matching
+   this app's own original design (dark login, bright app). No gradients
+   though: see html.auth-mode below for the flattened backdrop. */
 .gate {
     min-height: 70vh;
     display: grid;
@@ -262,10 +324,15 @@ body {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ---------------- Tabs & page head ---------------- */
-.tab-content { display: none; padding: 28px 24px 32px; background: var(--page); }
-.tab-content.active { display: block; }
+.tab-content { display: none; padding-top: 4px; }
+.tab-content.active { display: block; animation: tab-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both; }
 
-.page-head { margin-bottom: 22px; }
+@keyframes tab-in {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+}
+
+.page-head { margin-bottom: 18px; }
 .eyebrow {
     font-size: 11px;
     font-weight: 650;
@@ -277,6 +344,175 @@ body {
 .page-head h2 { font-size: 22px; font-weight: 650; letter-spacing: -0.02em; }
 .page-sub { font-size: 13px; color: var(--ink-muted); margin-top: 3px; }
 
+/* ---------------- Greeting (Home) ---------------- */
+.greeting {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+.greeting-hi { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
+.greeting-sub { font-size: 13.5px; color: var(--ink-muted); margin-top: 4px; }
+.greeting-avatar {
+    display: grid;
+    place-items: center;
+    width: 42px; height: 42px;
+    border-radius: var(--radius-full);
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    font-size: 15px;
+    flex: none;
+}
+
+/* ---------------- Section header ---------------- */
+.section-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 26px 0 12px;
+}
+.section-header:first-child { margin-top: 0; }
+.section-header h3 { font-size: 16px; font-weight: 650; letter-spacing: -0.01em; color: var(--ink); }
+.section-header .section-hint { font-size: 12px; color: var(--ink-muted); }
+
+/* ---------------- Hero workout card ----------------
+   Photo lives on its own layer so it alone can scale on hover. The
+   scrim over it is a single flat translucent navy fill — no gradient —
+   so it needs a touch more opacity than a graduated scrim would, to
+   stay legible wherever the text sits. */
+.hero-card {
+    position: relative;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    min-height: 240px;
+    display: flex;
+    align-items: flex-end;
+    padding: 24px;
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+    background: var(--accent-deep);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease;
+}
+.hero-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: var(--hero-photo);
+    background-size: cover;
+    background-position: center;
+    transform: scale(1);
+    transition: transform 1.4s cubic-bezier(0.16, 1, 0.3, 1), background-image 0.3s ease;
+}
+.hero-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(11, 27, 51, 0.62);
+}
+.hero-card:hover { transform: translateY(-2px); box-shadow: var(--shadow), 0 20px 40px rgba(16, 35, 63, 0.22); }
+.hero-card:hover::before { transform: scale(1.06); }
+
+.hero-content { position: relative; z-index: 1; width: 100%; }
+.hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.80);
+    margin-bottom: 8px;
+}
+.hero-title { font-size: 26px; font-weight: 750; letter-spacing: -0.02em; color: #fff; }
+.hero-meta { font-size: 13.5px; color: rgba(255, 255, 255, 0.85); margin-top: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.hero-meta .dot { width: 3px; height: 3px; border-radius: 50%; background: currentColor; opacity: 0.7; }
+.hero-progress-track {
+    height: 6px;
+    border-radius: var(--radius-full);
+    background: rgba(255, 255, 255, 0.20);
+    margin-top: 16px;
+    overflow: hidden;
+}
+.hero-progress-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    background: #fff;
+    width: var(--pct, 0%);
+    transition: width 700ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hero-actions { margin-top: 18px; display: flex; gap: 10px; }
+.hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 650;
+    color: var(--accent-deep);
+    background: #fff;
+    border: 0;
+    border-radius: var(--radius-full);
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    box-shadow: 0 6px 18px rgba(11, 27, 51, 0.35);
+}
+.hero-cta:hover { transform: translateY(-1px); background: #EEF3F9; box-shadow: 0 8px 22px rgba(11, 27, 51, 0.42); }
+.hero-cta .icon { width: 16px; height: 16px; }
+
+/* Empty state: no exercises planned for the selected day */
+.hero-card.is-empty { align-items: center; justify-content: center; text-align: center; min-height: 220px; }
+.hero-card.is-empty .hero-content { display: flex; flex-direction: column; align-items: center; }
+.hero-card.is-empty .hero-title { font-size: 20px; }
+.hero-card.is-empty .hero-meta { justify-content: center; max-width: 320px; }
+
+/* ---------------- Progress rings ---------------- */
+.progress-ring-wrap { display: grid; place-items: center; position: relative; flex: none; }
+.progress-ring { transform: rotate(-90deg); }
+.progress-ring circle {
+    fill: none;
+    stroke-width: 9;
+}
+.progress-ring .ring-track { stroke: rgba(16, 35, 63, 0.10); }
+.progress-ring .ring-fill {
+    stroke: var(--accent);
+    stroke-linecap: round;
+    stroke-dasharray: var(--ring-circ, 251.2);
+    stroke-dashoffset: var(--ring-offset, 251.2);
+    transition: stroke-dashoffset 900ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.progress-ring-label {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+}
+.progress-ring-value { font-size: 20px; font-weight: 750; letter-spacing: -0.02em; line-height: 1; color: var(--ink); }
+.progress-ring-caption { font-size: 10px; color: var(--ink-muted); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.progress-card {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    backdrop-filter: blur(20px) saturate(150%);
+}
+.progress-card-copy h3 { font-size: 15px; font-weight: 650; color: var(--ink); }
+.progress-card-copy p { font-size: 12.5px; color: var(--ink-muted); margin-top: 3px; }
+.progress-card-copy .btn { margin-top: 10px; }
+
 /* ---------------- Card ---------------- */
 .card {
     background: var(--card);
@@ -284,8 +520,12 @@ body {
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     margin-bottom: 18px;
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    backdrop-filter: blur(20px) saturate(150%);
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease;
 }
 .card:last-child { margin-bottom: 0; }
+.card:hover { transform: translateY(-2px); box-shadow: var(--shadow), 0 18px 36px rgba(16, 35, 63, 0.14); }
 
 .card-head {
     display: flex;
@@ -295,7 +535,7 @@ body {
     padding: 15px 18px;
     border-bottom: 1px solid var(--line);
 }
-.card-head h3 { font-size: 14px; font-weight: 650; letter-spacing: -0.01em; }
+.card-head h3 { font-size: 14px; font-weight: 650; letter-spacing: -0.01em; color: var(--ink); }
 .card-hint { font-size: 12px; color: var(--ink-muted); }
 .card-body { padding: 18px; }
 
@@ -318,14 +558,14 @@ input[type="text"], input[type="number"], input[type="date"], select {
     font: inherit;
     font-size: 13.5px;
     color: var(--ink);
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 9px 11px;
+    background: var(--field-bg);
+    border: 1px solid var(--field-border);
+    border-radius: 12px;
+    padding: 11px 13px;
     width: 100%;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-input::placeholder { color: #9aa1ac; }
+input::placeholder { color: var(--ink-faint); }
 input:focus, select:focus {
     outline: none;
     border-color: var(--accent);
@@ -334,7 +574,7 @@ input:focus, select:focus {
 
 select {
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6 9.5l6 6 6-6'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2353657D' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6 9.5l6 6 6-6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-position: right 9px center;
     background-size: 16px;
@@ -364,30 +604,33 @@ select {
     justify-content: center;
     gap: 7px;
     font: inherit;
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 600;
-    border-radius: 8px;
-    padding: 9px 15px;
+    border-radius: var(--radius-full);
+    padding: 11px 18px;
     cursor: pointer;
     border: 1px solid transparent;
     white-space: nowrap;
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.btn-primary { background: var(--accent); color: #fff; }
-.btn-primary:hover { background: var(--accent-ink); }
+.btn-primary {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(20, 43, 74, 0.28);
+}
+.btn-primary:hover {
+    background: color-mix(in srgb, var(--accent) 88%, black 12%);
+    box-shadow: 0 6px 18px rgba(20, 43, 74, 0.36);
+    transform: translateY(-1px);
+}
+.btn-primary:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(20, 43, 74, 0.30); }
 
-.btn-ghost { background: var(--card); color: var(--ink-2); border-color: var(--line); }
-.btn-ghost:hover { background: var(--page); color: var(--ink); }
+.btn-ghost { background: rgba(16, 35, 63, 0.06); color: var(--ink-2); border-color: var(--field-border); }
+.btn-ghost:hover { background: rgba(16, 35, 63, 0.11); color: var(--ink); }
 
 .btn-block { width: 100%; margin-top: 4px; }
-.btn-block + .btn-block { margin-top: 8px; }
-
-/* Destructive, so it stays quiet until hovered rather than competing with Save. */
-.btn-danger-ghost { background: transparent; color: var(--bad); border-color: transparent; }
-.btn-danger-ghost:hover { background: var(--bad-wash); border-color: var(--bad-wash); }
-.btn-danger-ghost[hidden] { display: none; }
-.btn-sm { padding: 6px 11px; font-size: 12px; }
+.btn-sm { padding: 7px 13px; font-size: 12px; }
 .btn[disabled] { opacity: 0.55; cursor: not-allowed; }
 
 .btn:focus-visible, .nav-btn:focus-visible, .view-btn:focus-visible, .icon-btn:focus-visible {
@@ -399,11 +642,11 @@ select {
 .icon-btn {
     display: grid;
     place-items: center;
-    width: 30px; height: 30px;
+    width: 32px; height: 32px;
     flex: none;
     background: transparent;
     border: 1px solid transparent;
-    border-radius: 7px;
+    border-radius: var(--radius-sm);
     color: var(--ink-muted);
     cursor: pointer;
     transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
@@ -421,57 +664,80 @@ select {
 
 /* Make the per-set delete legible as a delete without a hover state to rely on
    (there is no hover on a phone). */
-.set-row .set-remove { color: #98a1ae; }
+.set-row .set-remove { color: var(--ink-muted); }
 .set-row .set-remove:not(:disabled):hover { color: var(--bad); }
 
-/* ---------------- Day selector ---------------- */
-.day-selector {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+/* ---------------- Day pill selector ---------------- */
+.day-pills {
+    display: flex;
     gap: 8px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    padding-bottom: 2px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
-.day-btn {
+.day-pills::-webkit-scrollbar { display: none; }
+.day-pill {
+    scroll-snap-align: start;
+    flex: none;
     font: inherit;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 650;
     color: var(--ink-2);
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 10px 8px;
+    background: rgba(16, 35, 63, 0.055);
+    border: 1px solid var(--field-border);
+    border-radius: var(--radius-full);
+    padding: 11px 20px;
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
 }
-.day-btn:hover { background: var(--page); color: var(--ink); }
-.day-btn.active {
+.day-pill:hover { background: rgba(16, 35, 63, 0.10); color: var(--ink); transform: translateY(-1px); }
+.day-pill.active {
     background: var(--accent);
     border-color: var(--accent);
     color: #fff;
+    box-shadow: 0 4px 12px rgba(20, 43, 74, 0.30);
 }
-.day-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.day-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-/* ---------------- Exercise rows ---------------- */
-.exercises-list, .exercises-today { display: flex; flex-direction: column; gap: 8px; }
-.field + .exercises-list { margin-top: 20px; }
+/* ---------------- Exercise cards ---------------- */
+.exercise-list { display: flex; flex-direction: column; gap: 10px; }
+.field + .exercise-list { margin-top: 20px; }
 
-.exercise-item {
+.exercise-card, .info-row {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    background: var(--card);
+    background: var(--sunken);
     border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 11px 12px;
-    transition: border-color 0.15s ease, background 0.15s ease;
+    border-radius: var(--radius);
+    padding: 13px 14px;
+    transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease;
 }
-.exercise-item.is-clickable { cursor: pointer; }
-.exercise-item.is-clickable:hover { border-color: var(--accent); background: var(--accent-wash); }
+.info-row + .info-row { margin-top: 10px; }
+.exercise-card.is-clickable { cursor: pointer; }
+.exercise-card.is-clickable:hover { border-color: var(--accent); background: var(--accent-wash); transform: translateY(-1px); }
 
-.exercise-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.exercise-main { display: flex; align-items: center; gap: 12px; min-width: 0; }
+
+.exercise-badge {
+    display: grid;
+    place-items: center;
+    width: 38px; height: 38px;
+    border-radius: var(--radius-full);
+    background: rgba(16, 35, 63, 0.08);
+    color: var(--ink-muted);
+    flex: none;
+}
+.exercise-badge .icon { width: 17px; height: 17px; }
+.exercise-card.completed .exercise-badge { background: var(--accent); color: #fff; }
+
+.exercise-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .exercise-name {
     font-size: 13.5px;
-    font-weight: 550;
+    font-weight: 600;
     color: var(--ink);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -479,11 +745,21 @@ select {
 }
 .exercise-meta { font-size: 12px; color: var(--ink-muted); }
 
-/* Status marker: icon carries the state, color only reinforces it */
-.status-icon { width: 18px; height: 18px; flex: none; color: #c3c8d0; }
-.exercise-item.completed { background: var(--good-wash); border-color: #cde9db; }
-.exercise-item.completed .status-icon { color: var(--good); }
-.exercise-item.completed.is-clickable:hover { border-color: var(--good); background: var(--good-wash); }
+.exercise-card.completed { background: var(--good-wash); border-color: color-mix(in srgb, var(--good) 35%, transparent); }
+.exercise-card.completed .exercise-meta { color: var(--good); }
+
+/* Plan-page rows (name + reorder-free delete) reuse the same card, no badge state */
+.exercise-index {
+    display: grid;
+    place-items: center;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: rgba(16, 35, 63, 0.08);
+    color: var(--ink-muted);
+    font-size: 11.5px;
+    font-weight: 700;
+    flex: none;
+}
 
 /* ---------------- Log form ---------------- */
 .log-form {
@@ -495,7 +771,7 @@ select {
 }
 .log-form[hidden] { display: none; }
 .log-form-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
-.log-form h4 { font-size: 13.5px; font-weight: 650; }
+.log-form h4 { font-size: 13.5px; font-weight: 650; color: var(--ink); }
 .log-form .field { margin-bottom: 12px; }
 
 .set-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
@@ -519,9 +795,9 @@ select {
     font-size: 12px;
     font-weight: 600;
     color: var(--ink-2);
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 999px;
+    background: var(--field-bg);
+    border: 1px solid var(--field-border);
+    border-radius: var(--radius-full);
     padding: 5px 12px;
     font-variant-numeric: tabular-nums;
 }
@@ -529,22 +805,45 @@ select {
 .log-message { font-size: 12.5px; color: var(--ink-2); margin-top: 10px; min-height: 18px; }
 .log-message:empty { margin-top: 0; min-height: 0; }
 
-/* ---------------- Stat tiles ---------------- */
-.stat-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(184px, 1fr));
+/* ---------------- Stat cards ---------------- */
+.stat-scroll {
+    display: flex;
     gap: 12px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    padding-bottom: 2px;
     margin-bottom: 18px;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
 }
+.stat-scroll::-webkit-scrollbar { display: none; }
 .stat {
+    scroll-snap-align: start;
+    flex: none;
+    width: 156px;
     background: var(--card);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     padding: 15px 16px;
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    backdrop-filter: blur(20px) saturate(150%);
+    transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease;
+    animation: stat-in 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+.stat:hover { transform: translateY(-2px); box-shadow: var(--shadow), 0 14px 28px rgba(16, 35, 63, 0.16); }
+.stat-scroll .stat:nth-child(1) { animation-delay: 40ms; }
+.stat-scroll .stat:nth-child(2) { animation-delay: 100ms; }
+.stat-scroll .stat:nth-child(3) { animation-delay: 160ms; }
+.stat-scroll .stat:nth-child(4) { animation-delay: 220ms; }
+
+@keyframes stat-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: none; }
+}
+
 .stat-label {
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 650;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -552,27 +851,67 @@ select {
 }
 .stat-value {
     /* Proportional figures: tabular-nums makes large numbers look loose */
-    font-size: 28px;
-    font-weight: 650;
+    font-size: 26px;
+    font-weight: 700;
     letter-spacing: -0.025em;
     line-height: 1.15;
     margin: 7px 0 5px;
     color: var(--ink);
 }
-.stat-value .unit { font-size: 15px; font-weight: 550; color: var(--ink-muted); margin-left: 2px; }
-.stat-foot { font-size: 12px; color: var(--ink-muted); display: flex; align-items: center; gap: 5px; }
+.stat-value .unit { font-size: 14px; font-weight: 550; color: var(--ink-muted); margin-left: 2px; }
+.stat-foot { font-size: 11.5px; color: var(--ink-muted); display: flex; align-items: center; gap: 5px; }
 .stat-foot .icon { width: 13px; height: 13px; }
 .stat-foot .up { color: var(--good); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
 .stat-foot .down { color: var(--bad); font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
 
-/* ---------------- Dashboard layout ---------------- */
-.dashboard-layout {
-    display: grid;
-    grid-template-columns: minmax(330px, 0.85fr) 1.15fr;
-    gap: 18px;
-    align-items: start;
+/* Emphasis, used sparingly: personal-best and current-streak tiles only.
+   Solid navy + a soft navy-tinted shadow ring — no gradient, no glow hack. */
+.stat-accent .stat-value { color: var(--accent); }
+.stat-accent .stat-label { color: var(--accent-mid); }
+.stat-glow { box-shadow: var(--shadow), 0 0 0 1px rgba(20, 43, 74, 0.14), 0 10px 26px rgba(20, 43, 74, 0.18); }
+.stat-glow:hover { box-shadow: var(--shadow), 0 0 0 1px rgba(20, 43, 74, 0.20), 0 14px 30px rgba(20, 43, 74, 0.24); }
+
+@media (min-width: 640px) {
+    .stat-scroll { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); overflow: visible; }
+    .stat { width: auto; }
 }
-.dashboard-layout > .card { margin-bottom: 0; }
+
+/* ---------------- Weekly Plan preview (Home) ---------------- */
+.week-preview-nav { display: flex; align-items: center; gap: 6px; }
+.week-preview-nav .icon-btn { background: var(--sunken); }
+.week-strip {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+}
+.week-strip-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 4px;
+    border-radius: var(--radius-sm);
+    background: var(--sunken);
+    border: 1px solid transparent;
+    font: inherit;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+.week-strip-day:hover { background: rgba(16, 35, 63, 0.10); transform: translateY(-1px); }
+.week-strip-day.is-today { border-color: var(--accent); }
+.week-strip-day .week-strip-label { font-size: 10px; font-weight: 700; letter-spacing: 0.04em; color: var(--ink-muted); text-transform: uppercase; }
+.week-strip-day .week-strip-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--field-border); }
+.week-strip-day.has-plan .week-strip-dot { background: var(--accent); }
+.week-strip-day .week-strip-count { font-size: 11px; font-weight: 650; color: var(--ink-2); }
+.week-strip-day:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------------- Home layout ---------------- */
+.home-top-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin: 18px 0;
+}
 
 /* ---------------- Charts ---------------- */
 /* Stacked, not side-by-side: a time series wants width, and full-width
@@ -580,7 +919,7 @@ select {
 .charts-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
 
 .chart {
-    background: var(--card);
+    background: var(--sunken);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     padding: 14px;
@@ -644,68 +983,6 @@ select {
 .data-table .empty-cell { color: var(--ink-muted); padding: 26px 12px; text-align: center; }
 .data-table tbody tr:hover .empty-cell { background: transparent; }
 
-/* ---------------- Update banner ----------------
-   Bottom-anchored so it never covers the topbar or the tab switcher, and
-   clear of the home indicator on a phone. */
-.update-banner {
-    position: fixed;
-    left: 50%;
-    bottom: max(16px, env(safe-area-inset-bottom));
-    transform: translateX(-50%);
-    z-index: 60;
-
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    max-width: calc(100vw - 24px);
-    padding: 10px 10px 10px 14px;
-    background: var(--card);
-    border: 1px solid var(--line);
-    border-radius: 999px;
-    box-shadow: 0 8px 28px rgba(16, 24, 40, 0.18), 0 2px 6px rgba(16, 24, 40, 0.08);
-    animation: update-in-center 380ms cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-.update-banner[hidden] { display: none; }
-/* Set while the banner is up so the last row can still be scrolled clear of it
-   — a fixed bar would otherwise permanently hide the bottom of the page. */
-body.has-update { padding-bottom: calc(max(56px, env(safe-area-inset-bottom)) + 68px); }
-.update-banner .icon { color: var(--accent); flex: none; }
-.update-text {
-    font-size: 13px;
-    font-weight: 550;
-    color: var(--ink);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.update-banner .btn { flex: none; border-radius: 999px; }
-.update-dismiss { width: 28px; height: 28px; }
-.update-dismiss:hover { background: rgba(17, 24, 39, 0.06); border-color: transparent; color: var(--ink); }
-
-/* Base state is the resting state, so prefers-reduced-motion (which kills
-   animation outright) leaves the banner visible rather than invisible.
-   Two names rather than redefining one inside a media query: engines differ on
-   whether a re-declared @keyframes in a non-matching block still registers. */
-@keyframes update-in-center {
-    from { opacity: 0; transform: translateX(-50%) translateY(14px); }
-    to   { opacity: 1; transform: translateX(-50%); }
-}
-@keyframes update-in-flush {
-    from { opacity: 0; transform: translateY(14px); }
-    to   { opacity: 1; transform: none; }
-}
-
-/* Full-width on a phone: a centred pill would crowd the edges. */
-@media (max-width: 480px) {
-    .update-banner {
-        left: 12px;
-        right: 12px;
-        transform: none;
-        max-width: none;
-        animation-name: update-in-flush;
-    }
-}
-
 /* ---------------- Empty state ---------------- */
 .empty-state {
     display: flex;
@@ -718,36 +995,161 @@ body.has-update { padding-bottom: calc(max(56px, env(safe-area-inset-bottom)) + 
     border-radius: var(--radius);
     padding: 20px 16px;
 }
-.empty-state .icon { color: #b6bcc6; }
+.empty-state .icon { color: var(--ink-muted); }
+
+/* Bigger, friendlier empty state — plan-with-no-exercises, no logs yet */
+.empty-hero {
+    text-align: center;
+    padding: 40px 24px;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    -webkit-backdrop-filter: blur(20px) saturate(150%);
+    backdrop-filter: blur(20px) saturate(150%);
+}
+.empty-hero .empty-icon {
+    display: grid;
+    place-items: center;
+    width: 56px; height: 56px;
+    margin: 0 auto 16px;
+    border-radius: var(--radius-full);
+    background: var(--accent);
+    color: #fff;
+}
+.empty-hero .empty-icon .icon { width: 26px; height: 26px; }
+.empty-hero h3 { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; color: var(--ink); }
+.empty-hero p { font-size: 13.5px; color: var(--ink-muted); margin: 8px auto 20px; max-width: 320px; }
+
+/* ---------------- Bottom sheet / modal (Add Exercise) ---------------- */
+.sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(11, 27, 51, 0.45);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+    animation: sheet-fade 220ms ease both;
+}
+.sheet-backdrop[hidden] { display: none; }
+
+@keyframes sheet-fade { from { opacity: 0; } to { opacity: 1; } }
+
+.sheet {
+    width: 100%;
+    max-width: 480px;
+    background: var(--card-solid);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    box-shadow: 0 -12px 36px rgba(16, 35, 63, 0.22);
+    padding: 10px 22px calc(24px + env(safe-area-inset-bottom));
+    animation: sheet-up 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes sheet-up { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+.sheet-grabber { width: 40px; height: 4px; border-radius: 999px; background: var(--line); margin: 0 auto 18px; }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+.sheet-head h3 { font-size: 17px; font-weight: 700; color: var(--ink); }
+.sheet .field { margin-bottom: 18px; }
+
+@media (min-width: 640px) {
+    .sheet-backdrop { align-items: center; padding: 20px; }
+    .sheet {
+        border-radius: var(--radius-lg);
+        box-shadow: 0 24px 54px rgba(16, 35, 63, 0.28);
+        background: var(--card);
+        -webkit-backdrop-filter: blur(22px) saturate(150%);
+        backdrop-filter: blur(22px) saturate(150%);
+        padding: 22px 24px 24px;
+        animation: sheet-rise 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+    .sheet-grabber { display: none; }
+}
+
+@keyframes sheet-rise {
+    from { opacity: 0; transform: translateY(18px) scale(0.985); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* ---------------- Bottom navigation (mobile) ---------------- */
+.bottom-nav {
+    display: none;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 30;
+    justify-content: space-around;
+    align-items: center;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    background: var(--nav-bg);
+    border-top: 1px solid var(--nav-line);
+}
+.bottom-nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    font: inherit;
+    font-size: 10.5px;
+    font-weight: 600;
+    color: var(--nav-ink-muted);
+    background: transparent;
+    border: 0;
+    padding: 6px 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+.bottom-nav-btn .icon { width: 21px; height: 21px; }
+.bottom-nav-btn.active { color: var(--nav-ink); }
+
+.bottom-nav-fab {
+    display: grid;
+    place-items: center;
+    width: 46px; height: 46px;
+    border-radius: var(--radius-full);
+    background: var(--accent);
+    color: #fff;
+    border: 0;
+    cursor: pointer;
+    box-shadow: 0 6px 16px rgba(20, 43, 74, 0.45);
+    transform: translateY(-10px);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.bottom-nav-fab:hover { transform: translateY(-12px); box-shadow: 0 8px 20px rgba(20, 43, 74, 0.55); }
+.bottom-nav-fab .icon { width: 20px; height: 20px; }
 
 /* ---------------- Responsive ---------------- */
-@media (max-width: 1080px) {
-    .dashboard-layout { grid-template-columns: 1fr; }
+
+/* Nav-mode switch: bottom nav + minimal header below, persistent top nav above */
+@media (max-width: 860px) {
+    .top-nav-links, .topbar-end .btn-ghost#signOutBtn { display: none; }
+    .bottom-nav { display: flex; }
+    body { padding-bottom: calc(88px + env(safe-area-inset-bottom)); }
+}
+@media (min-width: 861px) {
+    .bottom-nav { display: none; }
+    body { padding-bottom: 40px; }
 }
 
 @media (max-width: 720px) {
     body {
-        padding: 14px 12px 40px;
+        padding: 14px 12px 96px;
         padding-top: max(14px, env(safe-area-inset-top));
         padding-left: max(12px, env(safe-area-inset-left));
         padding-right: max(12px, env(safe-area-inset-right));
-        padding-bottom: max(40px, env(safe-area-inset-bottom));
     }
-    /* Wrap rather than stack: brand and account keep one row, nav takes the next
-       full-width row. Stacking would push "Sign out" below the tab switcher. */
-    .topbar { flex-wrap: wrap; align-items: center; gap: 12px; }
-    .brand { flex: 1 1 auto; min-width: 0; }
-    .brand-copy { min-width: 0; }
-    .brand-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .topbar-end { order: 1; }
-    .segmented { order: 2; flex: 1 0 100%; }
-    .nav-btn { flex: 1; }
-    .tab-content { padding: 20px 14px 24px; }
+    .topbar { padding: 12px 14px; }
+    .brand-sub { display: none; }
     .input-row { flex-direction: column; }
     .input-row .btn { width: 100%; }
     .card-head { flex-wrap: wrap; }
     .gate { min-height: 60vh; }
     .gate-card { padding: 22px 18px 18px; }
+    .hero-title { font-size: 22px; }
+    .week-strip { grid-template-columns: repeat(7, minmax(38px, 1fr)); overflow-x: auto; }
 }
 
 /* Installed to a home screen: fill the window like a native app. */
@@ -757,25 +1159,19 @@ body.has-update { padding-bottom: calc(max(56px, env(safe-area-inset-bottom)) + 
 
 /* ============================================================
    AUTH MODE — dark cinematic backdrop + frosted glass card
-   Applied as .auth-mode on <html> while the gate is showing, so the
-   html background covers mobile overscroll too. The app itself stays light.
-
-   Contrast is engineered, not eyeballed. Worst case is a BRIGHT photo
-   directly behind the card:
-     photo #fff -> page scrim 0.62 -> card tint 0.55  ==  #333333 surface
-   Against that: white 12.6:1, muted (0.70 alpha) 7.1:1, white-on-accent
-   6.3:1. The app's normal link and error colours are unusable here —
-   #4338ca measures 1.6:1 and #b42318 measures 1.9:1 — so both are
-   re-tokenised below rather than inherited.
+   Applied as .auth-mode on <html> while the gate is showing. This is
+   the one screen that stays dark — a distinct "entry moment", same as
+   this app's original pre-redesign look. Its old radial-gradient glow
+   layers are gone (no gradients anywhere, gate included); the photo
+   layer plus a couple of flat solid fills do the same job.
    ============================================================ */
 
-html.auth-mode { background: #07080a; }
+html.auth-mode { background: #0B1B33; }
 
 html.auth-mode body {
     background: transparent;
     color: #fff;
 
-    /* Ink re-tokenised for a dark translucent surface */
     --ink: #ffffff;
     --ink-2: rgba(255, 255, 255, 0.82);
     --ink-muted: rgba(255, 255, 255, 0.70);
@@ -783,65 +1179,60 @@ html.auth-mode body {
     --bad: #fecaca;
     --good: #bbf7d0;
 
-    --login-photo: none;
-    /* The scrim exists to tame an unknown photo. With the generated backdrop
-       below there is nothing to tame — it is already dark by construction — so
-       a heavy scrim would only flatten it to black. Hence it is a variable,
-       raised to 0.62 (the value the contrast maths assumes) only when a real
-       photo is switched on. */
-    --login-scrim: 0.22;
+    --login-photo: var(--app-photo);
+    --login-scrim: 0.68;
 }
 
-/* ---- To use your own photo: drop it at images/login-bg.jpg and uncomment ----
-html.auth-mode body {
-    --login-photo: url('images/login-bg.jpg');
-    --login-scrim: 0.62;
-}
------------------------------------------------------------------------------ */
-
-/* Layer 1 — the picture, or a lit-from-above spotlight when there is no file.
-   The bright pool is deliberately placed where the card sits: backdrop-filter
-   needs luminance variation behind it or the "glass" reads as flat plastic. */
+/* Layer 1 — the picture, or a flat deep-navy fill when there is no file.
+   Blurred on purpose. The card's own backdrop-filter is no match for a photo
+   carrying large, high-contrast text: at 22px the words merely soften, and
+   fragments of them collide with the form's own labels. Blurring the layer
+   turns whatever image is dropped in here into atmosphere instead of content,
+   which is also what makes this robust to swapping the photo later.
+   inset is negative so the blur's soft edges fall outside the viewport rather
+   than showing as a pale frame — done with inset rather than a transform
+   because the entrance animation below already owns this element's transform. */
 html.auth-mode body::before {
     content: '';
     position: fixed;
-    inset: 0;
+    inset: -24px;
     z-index: -2;
-    background-color: #05060a;
-    background-image:
-        var(--login-photo),
-        radial-gradient(ellipse 75% 55% at 50% 30%, rgba(150, 163, 196, 0.30) 0%, rgba(150, 163, 196, 0.07) 45%, transparent 70%),
-        radial-gradient(ellipse 60% 45% at 50% 72%, rgba(99, 91, 255, 0.26) 0%, transparent 68%),
-        radial-gradient(ellipse 90% 60% at 12% 8%, rgba(56, 68, 102, 0.22) 0%, transparent 60%),
-        linear-gradient(180deg, #0b0e14 0%, #07080c 50%, #040405 100%);
-    background-size: cover, auto, auto, auto, auto;
+    background-color: #0B1B33;
+    background-image: var(--login-photo);
+    background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
+    filter: blur(7px);
 }
 
-/* Layer 2 — scrim + edge vignette. The vignette only ever darkens, so it can
-   never lift the surface above what the contrast maths allows. */
+/* Layer 2 — a single flat scrim (no vignette gradient) so the card
+   surface stays exactly as dark as the contrast maths assumes. */
 html.auth-mode body::after {
     content: '';
     position: fixed;
     inset: 0;
     z-index: -1;
-    background:
-        radial-gradient(ellipse 80% 68% at 50% 45%, transparent 0%, rgba(0, 0, 0, 0.60) 100%),
-        rgba(0, 0, 0, var(--login-scrim));
+    background: rgba(11, 27, 51, var(--login-scrim));
 }
 
 html.auth-mode .gate { min-height: 88vh; }
 
+/* The bottom nav sits outside #app in the markup, so #app[hidden] does not
+   hide it — without this, Home / Plan / Progress / Profile are on screen and
+   tappable before anyone has signed in. Higher specificity than the
+   `.bottom-nav { display: flex }` inside the max-width:860px query, so it wins
+   there too (media queries add no specificity). */
+html.auth-mode .bottom-nav { display: none; }
+
 html.auth-mode .gate-card {
-    background: rgba(10, 12, 16, 0.55);
+    background: rgba(11, 27, 51, 0.55);
     -webkit-backdrop-filter: blur(22px) saturate(150%);
     backdrop-filter: blur(22px) saturate(150%);
     border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 20px;
+    border-radius: 24px;
     box-shadow:
-        0 24px 60px rgba(0, 0, 0, 0.55),
-        inset 0 1px 0 rgba(255, 255, 255, 0.16);
+        0 24px 54px rgba(0, 0, 0, 0.45),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
 html.auth-mode .gate-brand { border-bottom-color: rgba(255, 255, 255, 0.14); }
@@ -859,7 +1250,7 @@ html.auth-mode .gate input[type="email"],
 html.auth-mode .gate input[type="password"] {
     background: rgba(255, 255, 255, 0.10);
     border-color: rgba(255, 255, 255, 0.26);
-    border-radius: 10px;
+    border-radius: 12px;
     color: #fff;
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
 }
@@ -878,13 +1269,12 @@ html.auth-mode .gate input:-webkit-autofill:hover,
 html.auth-mode .gate input:-webkit-autofill:focus {
     -webkit-text-fill-color: #fff;
     caret-color: #fff;
-    -webkit-box-shadow: 0 0 0 100px rgba(28, 30, 38, 0.96) inset;
+    -webkit-box-shadow: 0 0 0 100px rgba(11, 20, 36, 0.96) inset;
     transition: background-color 9999s ease-out 0s;
 }
 
 html.auth-mode .gate-links { border-top-color: rgba(255, 255, 255, 0.14); }
-/* The app's accent-ink link is 1.6:1 here — a light step is mandatory. */
-html.auth-mode .link-btn { color: #c7d2fe; }
+html.auth-mode .link-btn { color: #A9C3E8; }
 html.auth-mode .link-btn:hover { color: #fff; }
 
 html.auth-mode .gate-error {
@@ -906,15 +1296,12 @@ html.auth-mode .btn-ghost {
 html.auth-mode .btn-ghost:hover { background: rgba(255, 255, 255, 0.16); }
 
 html.auth-mode .uid-box {
-    background: rgba(0, 0, 0, 0.30);
+    background: rgba(0, 0, 0, 0.24);
     border-color: rgba(255, 255, 255, 0.16);
 }
 html.auth-mode .uid-box code { color: #fff; }
 
-html.auth-mode .spinner {
-    border-color: rgba(255, 255, 255, 0.18);
-    border-top-color: #c7d2fe;
-}
+html.auth-mode .spinner { border-color: rgba(255, 255, 255, 0.18); border-top-color: #A9C3E8; }
 
 /* ---------------- Entrance animation ----------------
    Every base style below is the FINAL state; the opening state lives only in
@@ -936,9 +1323,6 @@ html.auth-mode .spinner {
     to   { opacity: 1; transform: none; }
 }
 
-/* A slow cinematic push-in that settles and stops. Deliberately one-shot
-   rather than an infinite Ken Burns loop: perpetual background motion on a
-   login screen is a battery cost and a distraction, not polish. */
 @keyframes gate-backdrop {
     from { opacity: 0; transform: scale(1.08); }
     to   { opacity: 1; transform: none; }
@@ -979,19 +1363,30 @@ html.auth-mode .gate-view:not([hidden]) > *:nth-child(n+8) { animation-delay: 53
 /* No backdrop-filter (older Firefox, some embedded webviews): the blur is what
    makes translucency readable, so without it go nearly opaque instead. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    html.auth-mode .gate-card { background: rgba(12, 14, 19, 0.93); }
+    html.auth-mode .gate-card { background: rgba(11, 20, 36, 0.94); }
+    .topbar { background: var(--nav-bg); }
+    .card, .stat, .progress-card, .empty-hero { background: var(--card-solid); }
+    .sheet { background: var(--card-solid); }
 }
 
 /* Respect a stated preference for less transparency. */
 @media (prefers-reduced-transparency: reduce) {
     html.auth-mode .gate-card {
-        background: #0f1116;
+        background: #0e1929;
         -webkit-backdrop-filter: none;
         backdrop-filter: none;
     }
-    html.auth-mode body::after { background: rgba(0, 0, 0, 0.80); }
+    html.auth-mode body::after { background: rgba(11, 27, 51, 0.85); }
+
+    .card, .stat, .progress-card, .empty-hero {
+        background: var(--card-solid);
+        -webkit-backdrop-filter: none;
+        backdrop-filter: none;
+    }
+    .sheet { background: var(--card-solid); -webkit-backdrop-filter: none; backdrop-filter: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
     * { transition: none !important; animation: none !important; }
+    .hero-progress-fill, .ring-fill { transition: none !important; }
 }
