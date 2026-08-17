@@ -555,11 +555,16 @@
         </button>
     </nav>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Served from vendor/ rather than a CDN, on purpose. Two reasons:
+         a first launch no longer depends on cdn.jsdelivr.net or gstatic being
+         reachable (ad blockers and school/gym Wi-Fi both break them), and the
+         versions are pinned by the bytes in the repo instead of by a URL that
+         silently follows upstream. Update them by replacing the files. -->
+    <script src="vendor/chart.umd.js"></script>
     <!-- Firebase SDKs - Compat version for global access -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+    <script src="vendor/firebase-app-compat.js"></script>
+    <script src="vendor/firebase-auth-compat.js"></script>
+    <script src="vendor/firebase-database-compat.js"></script>
     <script src="firebase-config.js"></script>
     <script src="script.js"></script>
 </body>

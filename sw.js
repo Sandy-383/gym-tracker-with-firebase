@@ -6,15 +6,20 @@
  *   falling back to cache. Keeps you from ever running a stale mix of old JS
  *   against new HTML, while still opening fully offline.
  *
- *   Vendor scripts (version-pinned CDN URLs) -> cache-first. The URL contains
- *   the version, so the bytes behind it never change; re-fetching them on every
+ *   Remote images (the Home hero photos) -> cache-first. Their URLs carry a
+ *   fixed photo id, so the bytes behind them never change; re-fetching on every
  *   launch would just be slow.
+ *
+ * Chart.js and the Firebase SDKs used to be third-party CDN fetches handled
+ * cache-first. They now live in vendor/ and are ordinary same-origin app files,
+ * so they precache with the rest of the shell and need no special case.
  *
  * Nothing else is touched. Firebase auth and Realtime Database traffic must
  * always reach the network — caching it would serve stale sessions and data.
  */
 
-const VERSION = 'v4';
+// Bumped to v5: the shell gained vendor/, so the old caches must be discarded.
+const VERSION = 'v5';
 const APP_CACHE = 'gym-app-' + VERSION;
 const VENDOR_CACHE = 'gym-vendor-' + VERSION;
 const NETWORK_TIMEOUT_MS = 3500;
@@ -30,13 +35,19 @@ const APP_SHELL = [
     'icons/icon-192.png',
     'icons/icon-512.png',
     'icons/icon-180.png',
-    'assets/bg.jpg'
+    'assets/bg.jpg',
+    // Third-party libraries, vendored. Precached with the shell so a first
+    // launch needs nothing from any CDN.
+    'vendor/chart.umd.js',
+    'vendor/firebase-app-compat.js',
+    'vendor/firebase-auth-compat.js',
+    'vendor/firebase-database-compat.js'
 ];
 
-// images.unsplash.com serves the Home hero card's photo (see --hero-photo in
-// styles.css) — cache-first so it works offline after the first load, same
-// treatment as the other pinned vendor assets.
-const VENDOR_HOSTS = ['cdn.jsdelivr.net', 'www.gstatic.com', 'images.unsplash.com'];
+// images.unsplash.com serves the Home hero card's photos (see --hero-photo in
+// styles.css) — cache-first so they work offline after the first load. Each URL
+// pins a specific photo id, so the bytes behind it never change.
+const VENDOR_HOSTS = ['images.unsplash.com'];
 
 // Live traffic — never intercepted.
 const BYPASS_PATTERNS = [
