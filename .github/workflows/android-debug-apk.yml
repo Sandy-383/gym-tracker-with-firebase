@@ -23,7 +23,7 @@ on:
       - "android/**"
       - "vendor/**"
       - "scripts/**"
-      - "capacitor.config.ts"
+      - "capacitor.config.json"
       - "package.json"
       - "package-lock.json"
       - "index.html"
