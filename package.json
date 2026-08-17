@@ -6,7 +6,10 @@
   "scripts": {
     "build:www": "node scripts/build-www.js",
     "cap:sync": "npm run build:www && npx cap sync android",
-    "cap:open": "npx cap open android"
+    "cap:open": "npx cap open android",
+    "android:devices": "npx cap run android --list",
+    "android:install": "npm run cap:sync && npx cap run android",
+    "android:apk": "npm run cap:sync && node scripts/assemble-apk.js"
   },
   "license": "ISC",
   "dependencies": {
