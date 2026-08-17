@@ -41,8 +41,9 @@ concurrency:
   group: android-apk-${{ github.ref }}
   cancel-in-progress: true
 
+# contents: write is needed only to publish the APK to the "latest" release.
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -122,3 +123,37 @@ jobs:
           name: gym-tracker-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      # The artifact above is only reachable by someone signed in to GitHub, and
+      # it arrives as a zip — both of which make it painful to install from a
+      # phone. A release asset is a plain, publicly downloadable .apk, so the
+      # phone can fetch it directly in one tap and no account is involved.
+      #
+      # One rolling "latest" tag rather than a tag per build, deliberately: the
+      # download URL then never changes, which is what makes it shareable and
+      # what lets gymTracker/appVersion.apkUrl point somewhere permanent.
+      - name: Publish APK to the "latest" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/debug/app-debug.apk gym-tracker.apk
+          notes="Debug build of \`${GITHUB_SHA:0:7}\` — install straight onto a phone.
+
+          Download **gym-tracker.apk** below, open it, and allow \"install unknown apps\"
+          for whichever app opened it. No USB cable or developer options needed.
+
+          Debug-signed, so Android will refuse to install it over a copy signed with a
+          different key — uninstall the old one first if it complains about signatures.
+
+          See ANDROID_SETUP.md for the cable-install route instead."
+          if gh release view latest >/dev/null 2>&1; then
+            gh release upload latest gym-tracker.apk --clobber
+            gh release edit latest --notes "$notes"
+          else
+            gh release create latest gym-tracker.apk \
+              --title "Latest APK" \
+              --notes "$notes" \
+              --prerelease \
+              --target "$GITHUB_SHA"
+          fi
+          echo "Direct link: https://github.com/${GITHUB_REPOSITORY}/releases/download/latest/gym-tracker.apk"
