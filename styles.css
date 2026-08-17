@@ -630,8 +630,18 @@ select {
 .btn-ghost:hover { background: rgba(16, 35, 63, 0.11); color: var(--ink); }
 
 .btn-block { width: 100%; margin-top: 4px; }
+/* Stacked block buttons need real separation, not the 4px that only has to
+   clear the field above the first one. */
+.btn-block + .btn-block { margin-top: 8px; }
 .btn-sm { padding: 7px 13px; font-size: 12px; }
 .btn[disabled] { opacity: 0.55; cursor: not-allowed; }
+
+/* Destructive and secondary at once: it sits directly under Save, so it stays
+   quiet until hovered rather than reading as the other half of a pair. Colour
+   alone never carries it — it ships with a trash icon and the word Delete. */
+.btn-danger-ghost { background: transparent; color: var(--bad); border-color: transparent; }
+.btn-danger-ghost:hover { background: var(--bad-wash); border-color: var(--bad-wash); }
+.btn-danger-ghost[hidden] { display: none; }
 
 .btn:focus-visible, .nav-btn:focus-visible, .view-btn:focus-visible, .icon-btn:focus-visible {
     outline: 2px solid var(--accent);
@@ -982,6 +992,12 @@ select {
 .data-table tbody tr:hover td { background: var(--sunken); }
 .data-table .empty-cell { color: var(--ink-muted); padding: 26px 12px; text-align: center; }
 .data-table tbody tr:hover .empty-cell { background: transparent; }
+
+/* Delete column. Narrow and right-aligned so it reads as an action rail rather
+   than data, and padded down since .icon-btn brings its own 32px box. */
+.data-table .col-action { width: 1%; text-align: right; padding-top: 3px; padding-bottom: 3px; }
+.data-table th.col-action { padding-top: 9px; padding-bottom: 9px; }
+.data-table .col-action .icon-btn { display: inline-grid; vertical-align: middle; }
 
 /* ---------------- Empty state ---------------- */
 .empty-state {

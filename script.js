@@ -1130,7 +1130,79 @@ function loadLogIntoForm(date, exerciseName, sessionNumber) {
         setText('logMessage', `Nothing logged for ${formatDate(date)} yet.`);
     }
 
+    // Deleting only makes sense when there is something saved to delete.
+    const deleteBtn = document.getElementById('deleteLogBtn');
+    if (deleteBtn) deleteBtn.hidden = !existing;
+
     return !!existing;
+}
+
+// ==================== DELETING A LOGGED SESSION ====================
+// Without this there is no way to take a session back out of the totals and
+// charts. Correcting a session in place works (saving reuses the existing key),
+// but a session logged against the wrong exercise, date or session number can
+// only be removed — and clearing every set row and saving is refused, since a
+// saved session must have at least one set. So bad numbers would stay forever.
+
+// The single delete path. Both entry points resolve a log id and come here, so
+// the cache write, the remote write and the re-render can never drift apart.
+//
+// The remote write is `null` at the log's own path — a scoped delete, not a
+// rewrite of the list, so it cannot disturb a sibling session. Note this needs
+// no database-rules change: RTDB skips .validate when newData is null, so the
+// logs/$logId shape rule does not reject a removal.
+function deleteLogById(logId) {
+    const index = cachedData.logs.findIndex(log => log.id === logId);
+    if (index === -1) return false;
+
+    const log = cachedData.logs[index];
+    const confirmed = confirm(
+        `Delete the logged session for ${log.exercise} on ${formatDate(log.date)}?\n\n`
+        + 'It will be removed from your totals, charts and history. This cannot be undone.'
+    );
+    if (!confirmed) return false;
+
+    cachedData.logs.splice(index, 1);
+    writeCache();
+    pushUpdate({ ['logs/' + logId]: null });
+
+    // If the open form was pointing at the session just deleted, close it —
+    // leaving it up would invite a save that silently recreates the log.
+    if (currentExerciseForLogging
+        && currentExerciseForLogging.name === log.exercise
+        && currentExerciseForLogging.date === log.date) {
+        const form = document.getElementById('logForm');
+        if (form) form.hidden = true;
+        currentExerciseForLogging = null;
+    }
+
+    // Everything derived from logs has to be recomputed, not just the list:
+    // the exercise row's logged marker, the stats tiles, the hero and ring,
+    // the exercise dropdown, and the chart plus its table twin.
+    updateExercisesToday();
+    renderStats();
+    renderGreeting();   // the streak can change when a session goes away
+    populateExerciseSelect();
+    updateCharts();     // also refreshes renderHistoryTable()
+    return true;
+}
+
+// The log form's own button. Resolves whatever the visible date / exercise /
+// session number currently point at, then hands off. The history table on
+// Progress calls deleteLogById directly, since a row already knows its id.
+function deleteLoggedSession() {
+    if (!currentExerciseForLogging || !currentExerciseForLogging.name) return;
+
+    const date = document.getElementById('sessionDate').value;
+    const sessionNumber = parseInt(document.getElementById('sessionNumber').value) || 1;
+    const name = currentExerciseForLogging.name;
+
+    const existing = getLogsData().find(log =>
+        log.date === date &&
+        log.exercise === name &&
+        (parseInt(log.sessionNumber) || 1) === sessionNumber
+    );
+    if (existing) deleteLogById(existing.id);
 }
 
 // Changing the date must re-point the open form at the new day, not just
@@ -1211,6 +1283,10 @@ function logExercise() {
     currentExerciseForLogging.date = curDate;
     currentExerciseForLogging.sessionNumber = curSessionNumber;
 
+    // There is now a saved session at this position, so it can be deleted.
+    const deleteBtn = document.getElementById('deleteLogBtn');
+    if (deleteBtn) deleteBtn.hidden = false;
+
     // Compare with next session for the same exercise (chronological)
     const comparison = compareWithNextSession(Object.assign({ id: logId }, newLog), getLogsData());
 
@@ -1233,6 +1309,9 @@ function setupSetsLogUI() {
 
     const saveBtn = document.getElementById('saveLogBtn');
     if (saveBtn) saveBtn.addEventListener('click', (e) => { e.preventDefault(); logExercise(); });
+
+    const deleteBtn = document.getElementById('deleteLogBtn');
+    if (deleteBtn) deleteBtn.addEventListener('click', (e) => { e.preventDefault(); deleteLoggedSession(); });
 
     // Ensure at least one set row exists
     renderSetsForLog([]);
@@ -1653,13 +1732,15 @@ function renderHistoryTable() {
     const rows = logsForSelectedExercise().slice().reverse(); // newest first
 
     if (rows.length === 0) {
-        body.innerHTML = `<tr><td colspan="6" class="empty-cell">No sessions logged yet.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="7" class="empty-cell">No sessions logged yet.</td></tr>`;
         return;
     }
 
     body.innerHTML = rows.map(log => {
         const sets = (Array.isArray(log.sets) ? log.sets : []).map(s => s.reps).join(' / ') || '—';
         const weight = typeof log.weight === 'number' ? `${log.weight} kg` : '—';
+        // The id rides in a data attribute rather than the handler string so a
+        // key can never break the markup, same reason the exercise cards do it.
         return `
             <tr>
                 <td>${esc(formatDate(log.date))}</td>
@@ -1668,6 +1749,13 @@ function renderHistoryTable() {
                 <td>${esc(sets)}</td>
                 <td class="num">${repsOf(log)}</td>
                 <td class="num">${esc(weight)}</td>
+                <td class="col-action">
+                    <button type="button" class="icon-btn" data-log-id="${esc(log.id)}"
+                            aria-label="Delete ${esc(log.exercise)} on ${esc(formatDate(log.date))}"
+                            onclick="deleteLogById(this.dataset.logId)">
+                        <svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>
+                    </button>
+                </td>
             </tr>`;
     }).join('');
 }

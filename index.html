@@ -350,6 +350,12 @@
                 </div>
 
                 <button class="btn btn-primary btn-block" id="saveLogBtn">Save session</button>
+                <!-- Only shown once a saved session exists for this
+                     date/exercise/session; de-emphasised because it is
+                     destructive and must not compete with Save. -->
+                <button type="button" class="btn btn-danger-ghost btn-block" id="deleteLogBtn" hidden>
+                    <svg class="icon" aria-hidden="true"><use href="#i-trash"/></svg>Delete this session
+                </button>
                 <div id="logMessage" class="log-message" role="status"></div>
             </div>
 
@@ -465,6 +471,9 @@
                                         <th scope="col">Sets</th>
                                         <th scope="col" class="num">Total reps</th>
                                         <th scope="col" class="num">Weight</th>
+                                        <!-- Labelled rather than icon-only so the
+                                             column reads for screen readers too. -->
+                                        <th scope="col" class="col-action">Remove</th>
                                     </tr>
                                 </thead>
                                 <tbody id="historyBody"></tbody>
