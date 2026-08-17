@@ -1,0 +1,20 @@
+{
+  "name": "gym-tracker",
+  "version": "1.0.0",
+  "description": "Gym Tracker web app, packaged for Android via Capacitor",
+  "private": true,
+  "scripts": {
+    "build:www": "node scripts/build-www.js",
+    "cap:sync": "npm run build:www && npx cap sync android",
+    "cap:open": "npx cap open android"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/core": "^8.5.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.0"
+  }
+}

@@ -4,6 +4,10 @@
     ".write": false,
 
     "gymTracker": {
+      "appVersion": {
+        ".read": true
+      },
+
       "allowlist": {
         "$uid": {
           ".read": "auth != null && auth.uid === $uid",

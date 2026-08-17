@@ -536,6 +536,26 @@
         </div>
     </div>
 
+    <!-- ==================== UPDATE AVAILABLE (bottom sheet / modal) ==================== -->
+    <div class="sheet-backdrop" id="updateSheet" hidden>
+        <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="updateSheetTitle">
+            <div class="sheet-grabber"></div>
+            <div class="sheet-head">
+                <div>
+                    <h3 id="updateSheetTitle">Update available</h3>
+                    <p class="card-hint" id="updateSheetVersion">A new version is ready</p>
+                </div>
+            </div>
+            <p class="update-changelog" id="updateSheetChangelog"></p>
+            <div class="sheet-actions">
+                <button type="button" class="btn btn-primary btn-block" onclick="confirmAppUpdate()">
+                    <svg class="icon" aria-hidden="true"><use href="#i-arrow-right"/></svg>Update now
+                </button>
+                <button type="button" class="btn btn-ghost btn-block" onclick="dismissAppUpdate()">Later</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ==================== BOTTOM NAVIGATION (mobile) ==================== -->
     <nav class="bottom-nav" aria-label="Sections">
         <button type="button" class="bottom-nav-btn active" data-tab="home" onclick="switchTab('home')">
@@ -559,7 +579,9 @@
          a first launch no longer depends on cdn.jsdelivr.net or gstatic being
          reachable (ad blockers and school/gym Wi-Fi both break them), and the
          versions are pinned by the bytes in the repo instead of by a URL that
-         silently follows upstream. Update them by replacing the files. -->
+         silently follows upstream. Update them by replacing the files.
+         This matters more for the Android build than the web one: the APK ships
+         these files inside itself, so a cold start with no signal still boots. -->
     <script src="vendor/chart.umd.js"></script>
     <!-- Firebase SDKs - Compat version for global access -->
     <script src="vendor/firebase-app-compat.js"></script>

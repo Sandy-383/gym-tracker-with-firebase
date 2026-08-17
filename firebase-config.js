@@ -7,14 +7,14 @@
 // signed-in user whose uid is present in gymTracker/allowlist.
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDN-WSBrKx8AjZhFpOkJ8MlPsvGO02NxO8",
-  authDomain: "gym-tracker-c1754.firebaseapp.com",
-  databaseURL: "https://gym-tracker-c1754-default-rtdb.firebaseio.com",
-  projectId: "gym-tracker-c1754",
-  storageBucket: "gym-tracker-c1754.firebasestorage.app",
-  messagingSenderId: "92960918604",
-  appId: "1:92960918604:web:75a90a5833497186d738e9",
-  measurementId: "G-NF4617V9S1"
+  apiKey: "AIzaSyASP0sjSY5nZE__ym8aWlfUXDYf5g3AJrY",
+  authDomain: "gym-tracker-c1754-2ebca.firebaseapp.com",
+  databaseURL: "https://gym-tracker-c1754-2ebca-default-rtdb.firebaseio.com",
+  projectId: "gym-tracker-c1754-2ebca",
+  storageBucket: "gym-tracker-c1754-2ebca.firebasestorage.app",
+  messagingSenderId: "369716028158",
+  appId: "1:369716028158:web:6e13b4ebc967dec2e4fbaf",
+  measurementId: "G-BD02X9RS6L"
 };
 
 // Single namespace for everything Firebase, always defined.

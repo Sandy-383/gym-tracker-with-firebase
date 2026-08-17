@@ -1055,6 +1055,10 @@ select {
 .sheet-head h3 { font-size: 17px; font-weight: 700; color: var(--ink); }
 .sheet .field { margin-bottom: 18px; }
 
+.update-changelog { font-size: 14px; line-height: 1.5; color: var(--ink-2); white-space: pre-line; margin-bottom: 20px; }
+.sheet-actions { display: flex; flex-direction: column; gap: 10px; }
+.sheet-actions .btn-block { margin-top: 0; }
+
 @media (min-width: 640px) {
     .sheet-backdrop { align-items: center; padding: 20px; }
     .sheet {
@@ -1183,26 +1187,17 @@ html.auth-mode body {
     --login-scrim: 0.68;
 }
 
-/* Layer 1 — the picture, or a flat deep-navy fill when there is no file.
-   Blurred on purpose. The card's own backdrop-filter is no match for a photo
-   carrying large, high-contrast text: at 22px the words merely soften, and
-   fragments of them collide with the form's own labels. Blurring the layer
-   turns whatever image is dropped in here into atmosphere instead of content,
-   which is also what makes this robust to swapping the photo later.
-   inset is negative so the blur's soft edges fall outside the viewport rather
-   than showing as a pale frame — done with inset rather than a transform
-   because the entrance animation below already owns this element's transform. */
+/* Layer 1 — the picture, or a flat deep-navy fill when there is no file. */
 html.auth-mode body::before {
     content: '';
     position: fixed;
-    inset: -24px;
+    inset: 0;
     z-index: -2;
     background-color: #0B1B33;
     background-image: var(--login-photo);
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
-    filter: blur(7px);
 }
 
 /* Layer 2 — a single flat scrim (no vignette gradient) so the card
@@ -1216,13 +1211,6 @@ html.auth-mode body::after {
 }
 
 html.auth-mode .gate { min-height: 88vh; }
-
-/* The bottom nav sits outside #app in the markup, so #app[hidden] does not
-   hide it — without this, Home / Plan / Progress / Profile are on screen and
-   tappable before anyone has signed in. Higher specificity than the
-   `.bottom-nav { display: flex }` inside the max-width:860px query, so it wins
-   there too (media queries add no specificity). */
-html.auth-mode .bottom-nav { display: none; }
 
 html.auth-mode .gate-card {
     background: rgba(11, 27, 51, 0.55);

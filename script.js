@@ -79,6 +79,66 @@ let legacyChecked = false;   // pre-auth local data already offered for import
 const LEGACY_STORAGE_KEY = 'gymTrackerData';
 const BOOT_TIMEOUT_MS = 9000;
 
+// ==================== APP UPDATE CHECK (native Android only) ====================
+// The web/PWA build already self-updates via the service worker (sw.js); the
+// sideloaded Android APK has no store, so it checks a small Firebase node instead.
+// `window.androidBridge` is injected directly by Capacitor's native Android code
+// (unconditionally, with no plugin needed), so it's a reliable native-vs-web check.
+const APP_VERSION_CODE = 1; // Keep in sync with android/app/build.gradle's versionCode.
+const UPDATE_DISMISSED_KEY = 'gymTrackerUpdateDismissed';
+let pendingUpdate = null; // { apkUrl, versionCode }
+
+function isNativeAndroidApp() {
+    return typeof window.androidBridge !== 'undefined';
+}
+
+function checkForAppUpdate() {
+    if (!isNativeAndroidApp() || !fb.ready) return;
+
+    fb.db.ref('gymTracker/appVersion').once('value').then(snap => {
+        const info = snap.val();
+        if (!info || !info.latestVersionCode || !info.apkUrl) return;
+        if (info.latestVersionCode <= APP_VERSION_CODE) return;
+
+        const dismissed = Number(localStorage.getItem(UPDATE_DISMISSED_KEY) || 0);
+        if (dismissed >= info.latestVersionCode) return;
+
+        pendingUpdate = { apkUrl: info.apkUrl, versionCode: info.latestVersionCode };
+        openUpdateSheet(info);
+    }).catch(err => console.warn('[update-check] could not read gymTracker/appVersion', err));
+}
+
+function openUpdateSheet(info) {
+    const sheet = document.getElementById('updateSheet');
+    if (!sheet) return;
+    setText('updateSheetVersion', info.latestVersionName ? `Version ${info.latestVersionName}` : 'A new version is ready');
+    setText('updateSheetChangelog', info.changelog || 'Bug fixes and improvements.');
+    sheet.hidden = false;
+    document.addEventListener('keydown', handleUpdateSheetKeydown);
+}
+
+function closeUpdateSheet() {
+    const sheet = document.getElementById('updateSheet');
+    if (sheet) sheet.hidden = true;
+    document.removeEventListener('keydown', handleUpdateSheetKeydown);
+}
+
+function handleUpdateSheetKeydown(e) {
+    if (e.key === 'Escape') dismissAppUpdate();
+}
+
+function confirmAppUpdate() {
+    // No @capacitor/browser plugin needed: Capacitor's native WebViewClient already
+    // hands off any external-origin URL to the system browser via an ACTION_VIEW intent.
+    if (pendingUpdate) window.location.href = pendingUpdate.apkUrl;
+    closeUpdateSheet();
+}
+
+function dismissAppUpdate() {
+    if (pendingUpdate) localStorage.setItem(UPDATE_DISMISSED_KEY, String(pendingUpdate.versionCode));
+    closeUpdateSheet();
+}
+
 // ==================== BOOT ====================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -101,6 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
     showGateView('gateLoading');
     watchConnection();
     fb.auth.onAuthStateChanged(handleAuthChange);
+    checkForAppUpdate();
 });
 
 // The single place session changes are handled: sign in, sign out, token refresh,
@@ -497,6 +558,11 @@ function wireSheetUI() {
     const backdrop = document.getElementById('addExerciseSheet');
     if (backdrop) backdrop.addEventListener('click', e => {
         if (e.target === backdrop) closeAddExerciseSheet();
+    });
+
+    const updateBackdrop = document.getElementById('updateSheet');
+    if (updateBackdrop) updateBackdrop.addEventListener('click', e => {
+        if (e.target === updateBackdrop) dismissAppUpdate();
     });
 }
 
