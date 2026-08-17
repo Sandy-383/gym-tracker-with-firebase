@@ -20,13 +20,16 @@ Both need the toolchain in step 1.
 You need three things. Check what you already have:
 
 ```bash
-node --version     # need v18+
-java -version      # need 21
+node --version     # need v22 or newer
+java -version      # need 21 exactly
 adb --version      # part of the Android SDK platform-tools
 ```
 
 ### Node.js
-Already installed if `node --version` works. Otherwise: https://nodejs.org (LTS).
+**v22 minimum.** `@capacitor/cli` declares `engines.node >= 22.0.0`, and on Node
+20 `npx cap sync` fails rather than warning. If `node --version` says 20 or
+lower, update from https://nodejs.org (LTS) before anything else — this is the
+first thing to check when the build misbehaves.
 
 ### JDK 21
 This project builds with Gradle 8.14.3 against `compileSdk 36`, which needs
@@ -198,6 +201,7 @@ contains an unused hook for this — see `gymTracker/appVersion` in
 
 | Symptom | Cause |
 |---|---|
+| `npx cap sync` fails, often with no clear reason | Node older than 22. Check `node --version` first — this is the most common cause and the error it gives is unhelpful. |
 | `SDK location not found` | `ANDROID_HOME` unset and no `android/local.properties`. See step 1. |
 | `Unsupported class file major version` / toolchain errors | Wrong JDK. Needs 21; check `java -version`. |
 | `adb devices` empty | Cable is charge-only, or phone is not in File transfer mode. |

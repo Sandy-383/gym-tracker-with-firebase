@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Gym Tracker web app, packaged for Android via Capacitor",
   "private": true,
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "build:www": "node scripts/build-www.js",
     "cap:sync": "npm run build:www && npx cap sync android",

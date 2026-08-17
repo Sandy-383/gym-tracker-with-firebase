@@ -51,10 +51,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 22 is the floor, not a preference: @capacitor/cli 8.5 declares
+      # engines.node >= 22.0.0 and cap sync fails outright on 20. Pinned to the
+      # minimum rather than to whatever is current, so this job fails here if
+      # the app ever stops working on the oldest Node it claims to support.
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: npm
 
       # Gradle 8.14.3 against compileSdk 36 needs JDK 21. 17 is too old and 24
