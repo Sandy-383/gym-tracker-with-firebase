@@ -554,14 +554,26 @@ body {
 .field label { font-size: 12px; font-weight: 600; color: var(--ink-2); }
 .field .opt { font-weight: 450; color: var(--ink-muted); }
 
-input[type="text"], input[type="number"], input[type="date"], select {
+/* email and password belong here too. They were missing, and because the only
+   other rule that touches them (html.auth-mode .gate input) sets colour and
+   border but no padding or font-size, the two sign-in fields were falling back
+   to the browser's default ~1px padding — a thin slot with no room for the
+   caret, while every other field in the app had 11px. That is why the login
+   inputs looked half the height of the ones on Home.
+
+   16px, not 13.5px: below 16px, iOS Safari zooms the page in when a field takes
+   focus and does not zoom back out. min-height gives every field a 46px target,
+   comfortably over the 44px minimum, without depending on line-height. */
+input[type="text"], input[type="email"], input[type="password"],
+input[type="number"], input[type="date"], select {
     font: inherit;
-    font-size: 13.5px;
+    font-size: 16px;
     color: var(--ink);
     background: var(--field-bg);
     border: 1px solid var(--field-border);
     border-radius: 12px;
-    padding: 11px 13px;
+    padding: 12px 14px;
+    min-height: 46px;
     width: 100%;
     transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
@@ -1203,17 +1215,33 @@ html.auth-mode body {
     --login-scrim: 0.68;
 }
 
-/* Layer 1 — the picture, or a flat deep-navy fill when there is no file. */
+/* Layer 1 — the picture, or a flat deep-navy fill when there is no file.
+   Blurred on purpose. The card's own backdrop-filter is no match for a photo
+   carrying large, high-contrast text: at 22px the words merely soften, and
+   fragments of them collide with the form's own labels. Blurring the layer
+   turns whatever image is dropped in here into atmosphere instead of content,
+   which is also what makes this robust to swapping the photo later.
+   inset is negative so the blur's soft edges fall outside the viewport rather
+   than showing as a pale frame — done with inset rather than a transform
+   because the entrance animation below already owns this element's transform.
+
+   The Y position is biased low rather than centred. The wallpaper is a 9:16
+   portrait whose subject sits in its lower third, and `cover` crops the
+   vertical axis hard on any landscape viewport — centred, a desktop window
+   showed only the empty middle of the image, so the backdrop rendered as a
+   flat navy field and the picture was effectively absent. Anchoring low keeps
+   the subject in frame at both aspects. */
 html.auth-mode body::before {
     content: '';
     position: fixed;
-    inset: 0;
+    inset: -24px;
     z-index: -2;
     background-color: #0B1B33;
     background-image: var(--login-photo);
     background-size: cover;
-    background-position: center center;
+    background-position: center 78%;
     background-repeat: no-repeat;
+    filter: blur(5px);
 }
 
 /* Layer 2 — a single flat scrim (no vignette gradient) so the card
@@ -1227,6 +1255,13 @@ html.auth-mode body::after {
 }
 
 html.auth-mode .gate { min-height: 88vh; }
+
+/* The bottom nav sits outside #app in the markup, so #app[hidden] does not
+   hide it — without this, Home / Plan / Progress / Profile are on screen and
+   tappable before anyone has signed in. Higher specificity than the
+   `.bottom-nav { display: flex }` inside the max-width:860px query, so it wins
+   there too (media queries add no specificity). */
+html.auth-mode .bottom-nav { display: none; }
 
 html.auth-mode .gate-card {
     background: rgba(11, 27, 51, 0.55);
